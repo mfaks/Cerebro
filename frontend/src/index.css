@@ -1,1 +1,10 @@
 @import "tailwindcss";
+@import "@arcgis/core/assets/esri/themes/dark/main.css";
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
