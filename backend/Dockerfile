@@ -1,0 +1,17 @@
+FROM node:22-alpine
+
+WORKDIR /app
+
+COPY package.json package-lock.json ./
+
+RUN apk add --no-cache curl
+
+RUN npm ci
+
+COPY . .
+
+RUN npm run build
+
+EXPOSE 3000
+
+CMD ["node", "dist/index.js"]

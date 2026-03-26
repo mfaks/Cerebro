@@ -1,0 +1,18 @@
+echo "Running pre-push checks..."
+
+echo "\n[frontend] lint"
+npm run lint --prefix frontend
+
+echo "\n[frontend] build"
+npm run build --prefix frontend
+
+echo "\n[backend] lint"
+npm run lint --prefix backend
+
+echo "\n[backend] typecheck"
+npm run typecheck --prefix backend
+
+echo "\n[backend] build"
+npm run build --prefix backend
+
+echo "\nAll checks passed."

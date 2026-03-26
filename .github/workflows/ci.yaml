@@ -1,0 +1,88 @@
+name: Cerebro CI
+
+on:
+    pull_request:
+        branches: [main]
+
+jobs:
+    frontend-ci:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0
+
+            - name: Set up Node.js 22
+              uses: actions/setup-node@v4
+              with:
+                  node-version: "22"
+                  cache: "npm"
+                  cache-dependency-path: frontend/package-lock.json
+
+            - name: Install dependencies
+              run: npm ci
+              working-directory: frontend
+
+            - name: Lint
+              run: npm run lint
+              working-directory: frontend
+
+            - name: Typecheck
+              run: npm run typecheck
+              working-directory: frontend
+
+            - name: Unit tests
+              run: npm test
+              working-directory: frontend
+
+            - name: Build
+              run: npm run build
+              working-directory: frontend
+
+            - name: SonarQube Scan
+              uses: SonarSource/sonarqube-scan-action@v7
+              env:
+                  SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+              with:
+                  projectBaseDir: frontend/
+
+    backend-ci:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0
+
+            - name: Set up Node.js 22
+              uses: actions/setup-node@v4
+              with:
+                  node-version: "22"
+                  cache: "npm"
+                  cache-dependency-path: backend/package-lock.json
+
+            - name: Install dependencies
+              run: npm ci
+              working-directory: backend
+
+            - name: Lint
+              run: npm run lint
+              working-directory: backend
+
+            - name: Typecheck
+              run: npm run typecheck
+              working-directory: backend
+
+            - name: Unit tests
+              run: npm test
+              working-directory: backend
+
+            - name: Build
+              run: npm run build
+              working-directory: backend
+
+            - name: SonarQube Scan
+              uses: SonarSource/sonarqube-scan-action@v7
+              env:
+                  SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+              with:
+                  projectBaseDir: backend/
