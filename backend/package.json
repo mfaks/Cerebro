@@ -5,7 +5,7 @@
   "type": "module",
   "main": "src/index.js",
   "scripts": {
-    "dev": "tsx watch src/index.ts",
+    "dev": "tsx watch --env-file=../.env src/index.ts",
     "build": "tsc",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
@@ -19,6 +19,7 @@
     "dotenv": "^17.3.1",
     "express": "^5.2.1",
     "helmet": "^8.1.0",
+    "pg": "^8.20.0",
     "ws": "^8.20.0"
   },
   "devDependencies": {
@@ -26,6 +27,7 @@
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/node": "^25.5.0",
+    "@types/pg": "^8.20.0",
     "@types/ws": "^8.18.1",
     "eslint": "^10.1.0",
     "eslint-config-prettier": "^10.1.8",

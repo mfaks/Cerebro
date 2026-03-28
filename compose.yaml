@@ -1,7 +1,8 @@
 services:
 
   postgres:
-    image: postgres:18.3-alpine
+    image: postgis/postgis:17-3.5-alpine
+    platform: linux/amd64
     ports:
       - "5432:5432"
     environment:
