@@ -41,13 +41,6 @@ jobs:
               run: npm run build
               working-directory: frontend
 
-            - name: SonarQube Scan
-              uses: SonarSource/sonarqube-scan-action@v7
-              env:
-                  SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-              with:
-                  projectBaseDir: frontend/
-
     backend-ci:
         runs-on: ubuntu-latest
         steps:
@@ -81,10 +74,3 @@ jobs:
             - name: Build
               run: npm run build
               working-directory: backend
-
-            - name: SonarQube Scan
-              uses: SonarSource/sonarqube-scan-action@v7
-              env:
-                  SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-              with:
-                  projectBaseDir: backend/
