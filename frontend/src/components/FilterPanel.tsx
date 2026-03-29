@@ -19,7 +19,7 @@ const TYPE_LABELS: Record<AssetType, string> = {
   ROCKET_BODY: "Rocket Body",
 };
 
-export default function FilterPanel({
+function FilterPanel({
   filters,
   toggleType,
   setRegionLabel,
@@ -131,3 +131,5 @@ export default function FilterPanel({
     </Sidebar>
   );
 }
+
+export default FilterPanel;
