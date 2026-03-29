@@ -55,7 +55,6 @@ export interface TLEPayload {
 
 export interface AssetQuery {
   type?: string;
-  region?: string;
   startTime?: string;
   endTime?: string;
 }

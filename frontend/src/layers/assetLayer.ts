@@ -3,13 +3,17 @@ import Graphic from "@arcgis/core/Graphic";
 import Point from "@arcgis/core/geometry/Point";
 import SimpleMarkerSymbol from "@arcgis/core/symbols/SimpleMarkerSymbol";
 import MapView from "@arcgis/core/views/MapView";
-import mockData from "../data/assets.json";
 import type { Asset } from "../types/types";
 
-function createAssetLayer(mapView: MapView): GraphicsLayer {
-  const graphicsLayer = new GraphicsLayer();
+export function createAssetLayer(mapView: MapView): GraphicsLayer {
+  const layer = new GraphicsLayer();
+  mapView.map?.add(layer);
+  return layer;
+}
 
-  mockData.assets.forEach((asset: Asset) => {
+export function renderAssets(layer: GraphicsLayer, assets: Asset[]): void {
+  layer.removeAll();
+  assets.forEach((asset) => {
     const point = new Point({
       latitude: asset.position.latitude,
       longitude: asset.position.longitude,
@@ -20,21 +24,17 @@ function createAssetLayer(mapView: MapView): GraphicsLayer {
       size: 8,
     });
 
-    const graphic = new Graphic({
-      geometry: point,
-      symbol,
-      attributes: asset,
-      popupTemplate: {
-        title: "{name}",
-        content: "Type: {type} | Status: {status} | Alt: {position.altitude} km",
-      },
-    });
-
-    graphicsLayer.add(graphic);
+    layer.add(
+      new Graphic({
+        geometry: point,
+        symbol,
+        attributes: asset,
+        popupTemplate: {
+          title: "{name}",
+          content:
+            "Type: {type} | Status: {status} | Alt: {position.altitude} km",
+        },
+      }),
+    );
   });
-
-  mapView.map?.add(graphicsLayer);
-  return graphicsLayer;
 }
-
-export default createAssetLayer;

@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import type { AssetType, FilterPanelProps } from "../types/types";
-import { ALL_TYPES, REGIONS } from "../hooks/useAssetFilters";
+import { ALL_TYPES, ALL_REGIMES, REGIME_LABELS } from "../hooks/useAssetFilters";
 
 const TYPE_LABELS: Record<AssetType, string> = {
   PAYLOAD: "Payload",
@@ -19,12 +19,12 @@ const TYPE_LABELS: Record<AssetType, string> = {
   ROCKET_BODY: "Rocket Body",
 };
 
-export default function FilterPanel({
+function FilterPanel({
   filters,
   toggleType,
-  setRegionLabel,
-  setStartTime,
-  setEndTime,
+  toggleOrbitalRegime,
+  setAltitudeMin,
+  setAltitudeMax,
   reset,
 }: FilterPanelProps) {
   return (
@@ -43,10 +43,7 @@ export default function FilterPanel({
           <SidebarGroupContent>
             <div className="space-y-2.5 px-2">
               {ALL_TYPES.map((type) => (
-                <label
-                  key={type}
-                  className="flex items-center gap-2.5 cursor-pointer"
-                >
+                <label key={type} className="flex items-center gap-2.5 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={filters.types.has(type)}
@@ -66,21 +63,23 @@ export default function FilterPanel({
 
         <SidebarGroup>
           <SidebarGroupLabel className="text-xs font-medium uppercase tracking-widest text-sidebar-foreground/50">
-            Region
+            Orbital Regime
           </SidebarGroupLabel>
           <SidebarGroupContent>
-            <div className="px-2">
-              <select
-                value={filters.regionLabel}
-                onChange={(e) => setRegionLabel(e.target.value)}
-                className="w-full bg-sidebar-accent text-sm font-medium text-sidebar-foreground rounded px-2 py-1.5 border border-sidebar-border"
-              >
-                {REGIONS.map((r) => (
-                  <option key={r.label} value={r.label}>
-                    {r.label}
-                  </option>
-                ))}
-              </select>
+            <div className="space-y-2.5 px-2">
+              {ALL_REGIMES.map((regime) => (
+                <label key={regime} className="flex items-center gap-2.5 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={filters.orbitalRegimes.has(regime)}
+                    onChange={() => toggleOrbitalRegime(regime)}
+                    className="accent-blue-500"
+                  />
+                  <span className="text-sm font-medium text-sidebar-foreground">
+                    {REGIME_LABELS[regime]}
+                  </span>
+                </label>
+              ))}
             </div>
           </SidebarGroupContent>
         </SidebarGroup>
@@ -89,25 +88,29 @@ export default function FilterPanel({
 
         <SidebarGroup>
           <SidebarGroupLabel className="text-xs font-medium uppercase tracking-widest text-sidebar-foreground/50">
-            Time Range
+            Altitude Range (km)
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <div className="px-2 space-y-3">
               <div className="space-y-1">
-                <p className="text-xs font-medium text-sidebar-foreground/60">From</p>
+                <p className="text-xs font-medium text-sidebar-foreground/60">Min</p>
                 <input
-                  type="datetime-local"
-                  value={filters.startTime}
-                  onChange={(e) => setStartTime(e.target.value)}
+                  type="number"
+                  min={0}
+                  placeholder="e.g. 400"
+                  value={filters.altitudeMin}
+                  onChange={(e) => setAltitudeMin(e.target.value)}
                   className="w-full bg-sidebar-accent text-sm text-sidebar-foreground rounded px-2 py-1.5 border border-sidebar-border"
                 />
               </div>
               <div className="space-y-1">
-                <p className="text-xs font-medium text-sidebar-foreground/60">To</p>
+                <p className="text-xs font-medium text-sidebar-foreground/60">Max</p>
                 <input
-                  type="datetime-local"
-                  value={filters.endTime}
-                  onChange={(e) => setEndTime(e.target.value)}
+                  type="number"
+                  min={0}
+                  placeholder="e.g. 2000"
+                  value={filters.altitudeMax}
+                  onChange={(e) => setAltitudeMax(e.target.value)}
                   className="w-full bg-sidebar-accent text-sm text-sidebar-foreground rounded px-2 py-1.5 border border-sidebar-border"
                 />
               </div>
@@ -131,3 +134,5 @@ export default function FilterPanel({
     </Sidebar>
   );
 }
+
+export default FilterPanel;

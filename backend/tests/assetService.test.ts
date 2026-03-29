@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-vi.mock('../db/client.js', () => ({ query: vi.fn() }));
+vi.mock('../src/db/client.js', () => ({ query: vi.fn() }));
 
-import { query } from '../db/client.js';
-import { getAllAssets, getAssetById } from '../services/assetService.js';
+import { query } from '../src/db/client.js';
+import { getAllAssets, getAssetById } from '../src/services/assetService.js';
 
 const mockRow = {
   id: '25544',

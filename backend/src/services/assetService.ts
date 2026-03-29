@@ -81,19 +81,59 @@ export async function getAssetById(id: string): Promise<Asset | null> {
   return row ? rowToAsset(row) : null;
 }
 
-export async function getAssetTrack(id: string): Promise<AssetTrack | null> {
-  const asset = await getAssetById(id);
-  if (!asset) return null;
+export async function getAssetTrack(
+  id: string,
+  startTime?: string,
+  endTime?: string,
+): Promise<AssetTrack | null> {
+  const exists = await getAssetById(id);
+  if (!exists) return null;
 
-  // Stub: single-point track from current position.
-  const point: TrackPoint = {
-    latitude: asset.position.latitude,
-    longitude: asset.position.longitude,
-    altitude: asset.position.altitude,
-    time: asset.lastUpdated,
-  };
+  const params: unknown[] = [id];
+  let sql = `
+    SELECT ST_Y(geom) AS latitude, ST_X(geom) AS longitude, altitude, recorded_at AS time
+    FROM positions
+    WHERE asset_id = $1
+  `;
+  if (startTime) {
+    params.push(startTime);
+    sql += ` AND recorded_at >= $${params.length}`;
+  }
+  if (endTime) {
+    params.push(endTime);
+    sql += ` AND recorded_at <= $${params.length}`;
+  }
+  sql += ' ORDER BY recorded_at ASC';
 
-  return { assetId: id, points: [point] };
+  interface PositionRow {
+    latitude: number;
+    longitude: number;
+    altitude: number;
+    time: string;
+  }
+
+  const result = await query<PositionRow>(sql, params);
+  const points: TrackPoint[] = result.rows.map((r) => ({
+    latitude: Number(r.latitude),
+    longitude: Number(r.longitude),
+    altitude: Number(r.altitude),
+    time: r.time,
+  }));
+
+  return { assetId: id, points };
+}
+
+export async function insertPosition(
+  assetId: string,
+  latitude: number,
+  longitude: number,
+  altitude: number,
+): Promise<void> {
+  await query(
+    `INSERT INTO positions (asset_id, geom, altitude)
+     VALUES ($1, ST_SetSRID(ST_MakePoint($3, $2), 4326), $4)`,
+    [assetId, latitude, longitude, altitude],
+  );
 }
 
 export async function upsertAsset(asset: Asset): Promise<void> {
@@ -118,5 +158,11 @@ export async function upsertAsset(asset: Asset): Promise<void> {
       asset.metadata.country, asset.metadata.launchDate, asset.metadata.rcsSize,
       asset.lastUpdated,
     ],
+  );
+  await insertPosition(
+    asset.id,
+    asset.position.latitude,
+    asset.position.longitude,
+    asset.position.altitude,
   );
 }

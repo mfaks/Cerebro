@@ -13,7 +13,6 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
   const q = req.query;
   const query: AssetQuery = {};
   if (typeof q['type'] === 'string') query.type = q['type'];
-  if (typeof q['region'] === 'string') query.region = q['region'];
   if (typeof q['startTime'] === 'string') query.startTime = q['startTime'];
   if (typeof q['endTime'] === 'string') query.endTime = q['endTime'];
   const assets = await getAllAssets(query);
@@ -30,7 +29,12 @@ router.get('/:id', async (req: Request<{ id: string }>, res: Response): Promise<
 });
 
 router.get('/:id/track', async (req: Request<{ id: string }>, res: Response): Promise<void> => {
-  const track = await getAssetTrack(req.params.id);
+  const { startTime, endTime } = req.query;
+  const track = await getAssetTrack(
+    req.params.id,
+    typeof startTime === 'string' ? startTime : undefined,
+    typeof endTime === 'string' ? endTime : undefined,
+  );
   if (!track) {
     res.status(404).json({ error: 'Asset not found' });
     return;
