@@ -9,6 +9,8 @@ services:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - ./backend/src/db/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 5s
@@ -19,7 +21,7 @@ services:
   redis:
     image: redis:8.6.2-alpine
     ports:
-      - "6379:6379"
+      - "${REDIS_PORT}:${REDIS_PORT}"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -47,8 +49,9 @@ services:
     environment:
       - PORT=${BACKEND_PORT}
       - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
-      - REDIS_URL=redis://redis:6379
+      - REDIS_URL=redis://redis:${REDIS_PORT}
       - RABBITMQ_URL=amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@queue:5672
+      - FRONTEND_URL=${FRONTEND_URL}
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:${BACKEND_PORT}/health || exit 1"]
       interval: 10s
@@ -63,11 +66,26 @@ services:
       queue:
         condition: service_healthy
 
+  seeder:
+    image: node:22-alpine
+    working_dir: /scripts
+    volumes:
+      - ./scripts:/scripts:ro
+    environment:
+      - BACKEND_URL=http://backend:3000
+    command: npx --yes tsx seed-tle.ts
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: "no"
+
   frontend:
     build:
       context: ./frontend
     ports:
       - "5173:5173"
+    environment:
+      - VITE_ARCGIS_API_KEY=${VITE_ARCGIS_API_KEY}
     depends_on:
       backend:
         condition: service_healthy

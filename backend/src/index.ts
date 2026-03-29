@@ -20,13 +20,15 @@ const PORT = Number(process.env['PORT'] ?? 3000);
 const register = new Registry();
 collectDefaultMetrics({ register });
 
-// Redis client for rate-limit store
+const frontendUrl = process.env['FRONTEND_URL'];
+if (!frontendUrl) throw new Error('FRONTEND_URL environment variable is required');
+
 const redisUrl = process.env['REDIS_URL'];
 if (!redisUrl) throw new Error('REDIS_URL environment variable is required');
 const redisClient = createClient({ url: redisUrl });
 await redisClient.connect();
 
-// Apply a rate limiter to all API routes with Redis store of 50 requests per 15 minutes per IP
+// Create a rate limiter with Redis store of 50 requests per 15 minutes per IP
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   limit: 50,
@@ -37,7 +39,7 @@ const limiter = rateLimit({
   }),
 });
 
-app.use(cors());
+app.use(cors({ origin: frontendUrl }));
 app.use(helmet());
 app.use(express.json());
 

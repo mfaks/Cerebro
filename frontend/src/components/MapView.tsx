@@ -1,11 +1,16 @@
 import { useEffect, useRef } from "react";
+import esriConfig from "@arcgis/core/config.js";
 import Map from "@arcgis/core/Map.js";
 import ArcGISMapView from "@arcgis/core/views/MapView.js";
 import GraphicsLayer from "@arcgis/core/layers/GraphicsLayer.js";
-import Point from "@arcgis/core/geometry/Point.js";
-import createAssetLayer from "../layers/assetLayer";
+import { createAssetLayer, renderAssets } from "../layers/assetLayer";
 import type { Asset, AssetType, Filters } from "../types/types";
 import { REGIONS } from "../hooks/useAssetFilters";
+
+esriConfig.apiKey = import.meta.env.VITE_ARCGIS_API_KEY as string;
+
+
+const API_BASE = import.meta.env.VITE_API_BASE_URL as string;
 
 interface Props {
   filters: Filters;
@@ -27,21 +32,21 @@ function MapView({ filters }: Props) {
     view.when(() => {
       assetLayerRef.current = createAssetLayer(view);
 
-      const ws = new WebSocket("ws://localhost:3000/ws/assets");
+      fetch(`${API_BASE}/api/v1/assets`)
+        .then((r) => r.json())
+        .then((body: { data: Asset[] }) => {
+          if (assetLayerRef.current) {
+            renderAssets(assetLayerRef.current, body.data);
+          }
+        })
+        .catch((err: unknown) => console.error("Failed to load assets:", err));
+
+      const ws = new WebSocket(`${import.meta.env.VITE_WS_BASE_URL as string}/ws/assets`);
 
       ws.onmessage = (event) => {
-        const data = JSON.parse(event.data) as {
-          id: string;
-          position: { latitude: number; longitude: number };
-        };
-        const graphic = assetLayerRef.current?.graphics.find(
-          (g) => g.attributes.id === data.id
-        );
-        if (graphic) {
-          graphic.geometry = new Point({
-            latitude: data.position.latitude,
-            longitude: data.position.longitude,
-          });
+        const assets = JSON.parse(event.data) as Asset[];
+        if (assetLayerRef.current) {
+          renderAssets(assetLayerRef.current, assets);
         }
       };
 

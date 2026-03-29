@@ -30,7 +30,12 @@ router.get('/:id', async (req: Request<{ id: string }>, res: Response): Promise<
 });
 
 router.get('/:id/track', async (req: Request<{ id: string }>, res: Response): Promise<void> => {
-  const track = await getAssetTrack(req.params.id);
+  const { startTime, endTime } = req.query;
+  const track = await getAssetTrack(
+    req.params.id,
+    typeof startTime === 'string' ? startTime : undefined,
+    typeof endTime === 'string' ? endTime : undefined,
+  );
   if (!track) {
     res.status(404).json({ error: 'Asset not found' });
     return;

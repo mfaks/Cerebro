@@ -38,11 +38,13 @@ CREATE TABLE IF NOT EXISTS events (
 CREATE INDEX IF NOT EXISTS events_asset_idx ON events (asset_id);
 CREATE INDEX IF NOT EXISTS events_time_idx  ON events (time DESC);
 
--- Seed mock assets data.
-INSERT INTO assets (id, name, type, status, geom, altitude, speed, heading, country, launch_date, rcs_size, last_updated)
-VALUES
-  ('25544',  'ISS (ZARYA)',            'PAYLOAD',      'ACTIVE',    ST_SetSRID(ST_MakePoint(-120.3, 51.6),  4326), 408.5, 7.66, 51.6,  'US', '1998-11-20', 'LARGE',  '2026-03-25T12:00:00Z'),
-  ('20580',  'HUBBLE SPACE TELESCOPE', 'PAYLOAD',      'ACTIVE',    ST_SetSRID(ST_MakePoint(45.2,   28.5),  4326), 540.0, 7.59, 28.5,  'US', '1990-04-24', 'LARGE',  '2026-03-25T12:00:00Z'),
-  ('43013',  'STARLINK-1',             'PAYLOAD',      'ACTIVE',    ST_SetSRID(ST_MakePoint(22.1,   53.0),  4326), 550.0, 7.61, 53.0,  'US', '2019-05-24', 'MEDIUM', '2026-03-25T12:00:00Z'),
-  ('99001',  'DEBRIS-OBJECT-A',        'DEBRIS',       'UNTRACKED', ST_SetSRID(ST_MakePoint(170.5, -30.2),  4326), 620.0, 7.55, 120.0, 'TBD', NULL,        'SMALL',  '2026-03-25T12:00:00Z')
-ON CONFLICT (id) DO NOTHING;
+CREATE TABLE IF NOT EXISTS positions (
+  id          BIGSERIAL PRIMARY KEY,
+  asset_id    TEXT NOT NULL REFERENCES assets (id) ON DELETE CASCADE,
+  geom        geometry(Point, 4326) NOT NULL,
+  altitude    NUMERIC NOT NULL,
+  recorded_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS positions_asset_time_idx ON positions (asset_id, recorded_at DESC);
+
