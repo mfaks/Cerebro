@@ -26,7 +26,7 @@ function App() {
           setEndTime={setEndTime}
           reset={reset}
         />
-        <SidebarInset className="overflow-hidden">
+        <SidebarInset>
           <header className="relative flex h-12 shrink-0 items-center gap-2 border-b border-sidebar-border px-4">
             <SidebarTrigger className="-ml-1" />
             <Separator orientation="vertical" className="mx-1 h-4" />
@@ -40,7 +40,7 @@ function App() {
               <ModeToggle />
             </div>
           </header>
-          <div className="relative flex-1 min-h-0">
+          <div className="relative flex-1 min-h-0 overflow-hidden">
             <MapView filters={filters} />
           </div>
           <Footer />

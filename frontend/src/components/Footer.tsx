@@ -2,7 +2,7 @@ function Footer() {
   return (
     <footer className="flex h-8 shrink-0 items-center justify-between border-t border-sidebar-border px-4">
       <span className="text-xs text-muted-foreground">
-        Cerebro &copy; {new Date().getFullYear()}
+        &copy; {new Date().getFullYear()} Cerebro
       </span>
       <a
         href="https://github.com/mfaks/Cerebro"
