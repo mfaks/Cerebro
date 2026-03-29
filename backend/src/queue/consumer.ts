@@ -77,10 +77,17 @@ function tleToAsset(payload: TLEPayload): Asset {
   const inclDeg = (satrec.inclo * 180) / Math.PI;
   const catalogId = payload.line1.substring(2, 7).trim();
 
+  const upperName = payload.name.toUpperCase();
+  const objectType: Asset['type'] = upperName.includes('DEB')
+    ? 'DEBRIS'
+    : upperName.includes('R/B')
+      ? 'ROCKET_BODY'
+      : 'PAYLOAD';
+
   return {
     id: catalogId,
     name: payload.name,
-    type: 'PAYLOAD',
+    type: objectType,
     status: 'ACTIVE',
     position: { latitude: lat, longitude: lon, altitude: altKm },
     velocity: { speed: speedKms, heading: inclDeg },

@@ -12,7 +12,7 @@ import { ModeToggle } from "./components/ModeToggle";
 import Footer from "./components/Footer";
 
 function App() {
-  const { filters, toggleType, setRegionLabel, setStartTime, setEndTime, reset } =
+  const { filters, toggleType, toggleOrbitalRegime, setAltitudeMin, setAltitudeMax, reset } =
     useAssetFilters();
 
   return (
@@ -21,9 +21,9 @@ function App() {
         <FilterPanel
           filters={filters}
           toggleType={toggleType}
-          setRegionLabel={setRegionLabel}
-          setStartTime={setStartTime}
-          setEndTime={setEndTime}
+          toggleOrbitalRegime={toggleOrbitalRegime}
+          setAltitudeMin={setAltitudeMin}
+          setAltitudeMax={setAltitudeMax}
           reset={reset}
         />
         <SidebarInset>

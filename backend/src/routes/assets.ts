@@ -13,7 +13,6 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
   const q = req.query;
   const query: AssetQuery = {};
   if (typeof q['type'] === 'string') query.type = q['type'];
-  if (typeof q['region'] === 'string') query.region = q['region'];
   if (typeof q['startTime'] === 'string') query.startTime = q['startTime'];
   if (typeof q['endTime'] === 'string') query.endTime = q['endTime'];
   const assets = await getAllAssets(query);

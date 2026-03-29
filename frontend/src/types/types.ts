@@ -22,23 +22,20 @@ export interface Asset {
 
 export type AssetType = "PAYLOAD" | "DEBRIS" | "ROCKET_BODY";
 
-export type RegionOption = {
-  label: string;
-  bounds?: { minLat: number; maxLat: number; minLon: number; maxLon: number };
-};
+export type OrbitalRegime = "LEO" | "MEO" | "GEO" | "HEO";
 
 export interface Filters {
   types: Set<AssetType>;
-  regionLabel: string;
-  startTime: string;
-  endTime: string;
+  orbitalRegimes: Set<OrbitalRegime>;
+  altitudeMin: string;
+  altitudeMax: string;
 }
 
 export interface FilterPanelProps {
   filters: Filters;
   toggleType: (type: AssetType) => void;
-  setRegionLabel: (label: string) => void;
-  setStartTime: (time: string) => void;
-  setEndTime: (time: string) => void;
+  toggleOrbitalRegime: (regime: OrbitalRegime) => void;
+  setAltitudeMin: (val: string) => void;
+  setAltitudeMax: (val: string) => void;
   reset: () => void;
 }

@@ -1,11 +1,11 @@
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import esriConfig from "@arcgis/core/config.js";
 import Map from "@arcgis/core/Map.js";
 import ArcGISMapView from "@arcgis/core/views/MapView.js";
 import GraphicsLayer from "@arcgis/core/layers/GraphicsLayer.js";
 import { createAssetLayer, renderAssets } from "../layers/assetLayer";
-import type { Asset, AssetType, Filters } from "../types/types";
-import { REGIONS } from "../hooks/useAssetFilters";
+import type { Asset, AssetType, OrbitalRegime, Filters } from "../types/types";
+import { REGIME_BOUNDS } from "../hooks/useAssetFilters";
 
 esriConfig.apiKey = import.meta.env.VITE_ARCGIS_API_KEY as string;
 
@@ -19,6 +19,38 @@ interface Props {
 function MapView({ filters }: Props) {
   const mapRef = useRef<HTMLDivElement>(null);
   const assetLayerRef = useRef<GraphicsLayer | null>(null);
+  const filtersRef = useRef<Filters>(filters);
+
+  useEffect(() => {
+    filtersRef.current = filters;
+  }, [filters]);
+
+  const applyFilters = useCallback((layer: GraphicsLayer) => {
+    const currentFilters = filtersRef.current;
+
+    layer.graphics.forEach((graphic) => {
+      const asset = graphic.attributes as Asset;
+      let visible = currentFilters.types.has(asset.type as AssetType);
+
+      if (visible) {
+        const alt = asset.position.altitude;
+        visible = Array.from(currentFilters.orbitalRegimes).some((regime: OrbitalRegime) => {
+          const { min, max } = REGIME_BOUNDS[regime];
+          return alt >= min && alt < max;
+        });
+      }
+
+      if (visible && currentFilters.altitudeMin !== "") {
+        visible = asset.position.altitude >= Number(currentFilters.altitudeMin);
+      }
+
+      if (visible && currentFilters.altitudeMax !== "") {
+        visible = asset.position.altitude <= Number(currentFilters.altitudeMax);
+      }
+
+      graphic.visible = visible;
+    });
+  }, []);
 
   useEffect(() => {
     const map = new Map({ basemap: "satellite" });
@@ -37,6 +69,7 @@ function MapView({ filters }: Props) {
         .then((body: { data: Asset[] }) => {
           if (assetLayerRef.current) {
             renderAssets(assetLayerRef.current, body.data);
+            applyFilters(assetLayerRef.current);
           }
         })
         .catch((err: unknown) => console.error("Failed to load assets:", err));
@@ -47,6 +80,7 @@ function MapView({ filters }: Props) {
         const assets = JSON.parse(event.data) as Asset[];
         if (assetLayerRef.current) {
           renderAssets(assetLayerRef.current, assets);
+          applyFilters(assetLayerRef.current);
         }
       };
 
@@ -57,38 +91,13 @@ function MapView({ filters }: Props) {
     return () => {
       view.destroy();
     };
-  }, []);
+  }, [applyFilters]);
 
   useEffect(() => {
     const layer = assetLayerRef.current;
     if (!layer) return;
-
-    const region = REGIONS.find((r) => r.label === filters.regionLabel);
-
-    layer.graphics.forEach((graphic) => {
-      const asset = graphic.attributes as Asset;
-      let visible = filters.types.has(asset.type as AssetType);
-
-      if (visible && region?.bounds) {
-        const { minLat, maxLat, minLon, maxLon } = region.bounds;
-        visible =
-          asset.position.latitude >= minLat &&
-          asset.position.latitude <= maxLat &&
-          asset.position.longitude >= minLon &&
-          asset.position.longitude <= maxLon;
-      }
-
-      if (visible && filters.startTime && asset.lastUpdated) {
-        visible = new Date(asset.lastUpdated) >= new Date(filters.startTime);
-      }
-
-      if (visible && filters.endTime && asset.lastUpdated) {
-        visible = new Date(asset.lastUpdated) <= new Date(filters.endTime);
-      }
-
-      graphic.visible = visible;
-    });
-  }, [filters.types, filters.regionLabel, filters.startTime, filters.endTime]);
+    applyFilters(layer);
+  }, [filters.types, filters.orbitalRegimes, filters.altitudeMin, filters.altitudeMax, applyFilters]);
 
   return <div ref={mapRef} style={{ position: "absolute", inset: 0 }} />;
 }
