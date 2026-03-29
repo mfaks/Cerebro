@@ -21,9 +21,9 @@ Object.defineProperty(window, 'matchMedia', {
 function makeFilters(overrides?: Partial<Filters>): Filters {
   return {
     types: new Set(['PAYLOAD', 'DEBRIS', 'ROCKET_BODY']),
-    regionLabel: 'Global',
-    startTime: '',
-    endTime: '',
+    orbitalRegimes: new Set(['LEO', 'MEO', 'GEO', 'HEO']),
+    altitudeMin: '',
+    altitudeMax: '',
     ...overrides,
   };
 }
@@ -32,9 +32,9 @@ function renderFilterPanel(filters: Filters, overrides = {}) {
   const props = {
     filters,
     toggleType: vi.fn(),
-    setRegionLabel: vi.fn(),
-    setStartTime: vi.fn(),
-    setEndTime: vi.fn(),
+    toggleOrbitalRegime: vi.fn(),
+    setAltitudeMin: vi.fn(),
+    setAltitudeMax: vi.fn(),
     reset: vi.fn(),
     ...overrides,
   };

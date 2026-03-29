@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
-import { useAssetFilters, ALL_TYPES } from '../src/hooks/useAssetFilters';
+import { useAssetFilters, ALL_TYPES, ALL_REGIMES } from '../src/hooks/useAssetFilters';
 
 describe('useAssetFilters', () => {
   it('initialises with all types selected', () => {
@@ -10,11 +10,13 @@ describe('useAssetFilters', () => {
     }
   });
 
-  it('initialises with Global region and empty time range', () => {
+  it('initialises with all orbital regimes selected and empty altitude range', () => {
     const { result } = renderHook(() => useAssetFilters());
-    expect(result.current.filters.regionLabel).toBe('Global');
-    expect(result.current.filters.startTime).toBe('');
-    expect(result.current.filters.endTime).toBe('');
+    for (const regime of ALL_REGIMES) {
+      expect(result.current.filters.orbitalRegimes.has(regime)).toBe(true);
+    }
+    expect(result.current.filters.altitudeMin).toBe('');
+    expect(result.current.filters.altitudeMax).toBe('');
   });
 
   it('toggleType removes a type when it is already selected', () => {
@@ -36,37 +38,37 @@ describe('useAssetFilters', () => {
     expect(result.current.filters.types.has('DEBRIS')).toBe(true);
   });
 
-  it('setRegionLabel updates the region', () => {
+  it('toggleOrbitalRegime removes a regime when it is already selected', () => {
     const { result } = renderHook(() => useAssetFilters());
     act(() => {
-      result.current.setRegionLabel('Europe');
+      result.current.toggleOrbitalRegime('LEO');
     });
-    expect(result.current.filters.regionLabel).toBe('Europe');
+    expect(result.current.filters.orbitalRegimes.has('LEO')).toBe(false);
   });
 
-  it('setStartTime and setEndTime update time range', () => {
+  it('setAltitudeMin and setAltitudeMax update altitude range', () => {
     const { result } = renderHook(() => useAssetFilters());
     act(() => {
-      result.current.setStartTime('2026-01-01T00:00');
-      result.current.setEndTime('2026-12-31T23:59');
+      result.current.setAltitudeMin('400');
+      result.current.setAltitudeMax('2000');
     });
-    expect(result.current.filters.startTime).toBe('2026-01-01T00:00');
-    expect(result.current.filters.endTime).toBe('2026-12-31T23:59');
+    expect(result.current.filters.altitudeMin).toBe('400');
+    expect(result.current.filters.altitudeMax).toBe('2000');
   });
 
   it('reset restores all defaults', () => {
     const { result } = renderHook(() => useAssetFilters());
     act(() => {
       result.current.toggleType('PAYLOAD');
-      result.current.setRegionLabel('Asia-Pacific');
-      result.current.setStartTime('2026-01-01T00:00');
+      result.current.toggleOrbitalRegime('GEO');
+      result.current.setAltitudeMin('400');
     });
     act(() => {
       result.current.reset();
     });
     expect(result.current.filters.types.size).toBe(ALL_TYPES.length);
-    expect(result.current.filters.regionLabel).toBe('Global');
-    expect(result.current.filters.startTime).toBe('');
-    expect(result.current.filters.endTime).toBe('');
+    expect(result.current.filters.orbitalRegimes.size).toBe(ALL_REGIMES.length);
+    expect(result.current.filters.altitudeMin).toBe('');
+    expect(result.current.filters.altitudeMax).toBe('');
   });
 });
