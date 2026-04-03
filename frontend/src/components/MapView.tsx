@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import esriConfig from "@arcgis/core/config.js";
 import Map from "@arcgis/core/Map.js";
 import ArcGISMapView from "@arcgis/core/views/MapView.js";
@@ -14,12 +14,20 @@ const API_BASE = import.meta.env.VITE_API_BASE_URL as string;
 
 interface Props {
   filters: Filters;
+  onAssetsChange: (assets: Asset[]) => void;
 }
 
-function MapView({ filters }: Props) {
+interface Tooltip {
+  x: number;
+  y: number;
+  asset: Asset;
+}
+
+function MapView({ filters, onAssetsChange }: Props) {
   const mapRef = useRef<HTMLDivElement>(null);
   const assetLayerRef = useRef<GraphicsLayer | null>(null);
   const filtersRef = useRef<Filters>(filters);
+  const [tooltip, setTooltip] = useState<Tooltip | null>(null);
 
   useEffect(() => {
     filtersRef.current = filters;
@@ -53,12 +61,15 @@ function MapView({ filters }: Props) {
   }, []);
 
   useEffect(() => {
+    let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+
     const map = new Map({ basemap: "satellite" });
     const view = new ArcGISMapView({
       container: mapRef.current!,
       map,
       center: [0, 0],
       zoom: 2,
+      popupEnabled: false,
     });
 
     view.when(() => {
@@ -70,25 +81,55 @@ function MapView({ filters }: Props) {
           if (assetLayerRef.current) {
             renderAssets(assetLayerRef.current, body.data);
             applyFilters(assetLayerRef.current);
+            onAssetsChange(body.data);
           }
         })
         .catch((err: unknown) => console.error("Failed to load assets:", err));
 
-      const ws = new WebSocket(`${import.meta.env.VITE_WS_BASE_URL as string}/ws/assets`);
+      const WS_URL = `${import.meta.env.VITE_WS_BASE_URL as string}/ws/assets`;
 
-      ws.onmessage = (event) => {
-        const assets = JSON.parse(event.data) as Asset[];
-        if (assetLayerRef.current) {
-          renderAssets(assetLayerRef.current, assets);
-          applyFilters(assetLayerRef.current);
-        }
-      };
+      function connectWS() {
+        const ws = new WebSocket(WS_URL);
 
-      ws.onclose = () => console.log("WebSocket disconnected");
-      ws.onerror = (err) => console.error("WebSocket error", err);
+        ws.onmessage = (event) => {
+          const assets = JSON.parse(event.data) as Asset[];
+          if (assetLayerRef.current) {
+            renderAssets(assetLayerRef.current, assets);
+            applyFilters(assetLayerRef.current);
+            onAssetsChange(assets);
+          }
+        };
+
+        ws.onclose = () => {
+          console.log("WebSocket disconnected — retrying in 5s");
+          reconnectTimer = setTimeout(connectWS, 5000);
+        };
+
+        ws.onerror = (err) => console.error("WebSocket error", err);
+      }
+
+      connectWS();
+
+      view.on("pointer-move", (event) => {
+        void view.hitTest(event).then((response) => {
+          const hit = response.results.find(
+            (r) => r.type === "graphic" && r.graphic.attributes
+          );
+          if (hit && hit.type === "graphic") {
+            setTooltip({
+              x: event.x,
+              y: event.y,
+              asset: hit.graphic.attributes as Asset,
+            });
+          } else {
+            setTooltip(null);
+          }
+        });
+      });
     });
 
     return () => {
+      if (reconnectTimer) clearTimeout(reconnectTimer);
       view.destroy();
     };
   }, [applyFilters]);
@@ -99,7 +140,26 @@ function MapView({ filters }: Props) {
     applyFilters(layer);
   }, [filters.types, filters.orbitalRegimes, filters.altitudeMin, filters.altitudeMax, applyFilters]);
 
-  return <div ref={mapRef} style={{ position: "absolute", inset: 0 }} />;
+  return (
+    <div style={{ position: "absolute", inset: 0 }}>
+      <div ref={mapRef} style={{ position: "absolute", inset: 0 }} />
+      {tooltip && (
+        <div
+          style={{ left: tooltip.x + 14, top: tooltip.y + 14 }}
+          className="pointer-events-none absolute z-50 max-w-48 rounded-md border border-border bg-background/95 px-3 py-2 shadow-lg backdrop-blur-sm"
+        >
+          <p className="text-sm font-semibold text-foreground leading-tight">{tooltip.asset.name}</p>
+          <p className="mt-1 text-xs text-muted-foreground">{tooltip.asset.type.replace("_", " ")}</p>
+          <p className="text-xs text-muted-foreground">
+            {Math.round(tooltip.asset.position.altitude).toLocaleString()} km
+          </p>
+          <p className="text-xs text-muted-foreground">
+            {tooltip.asset.velocity.speed.toFixed(1)} km/s
+          </p>
+        </div>
+      )}
+    </div>
+  );
 }
 
 export default MapView;

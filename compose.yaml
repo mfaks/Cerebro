@@ -43,7 +43,6 @@ services:
       - FRONTEND_URL=${FRONTEND_URL}
       - SPACETRACK_USER=${SPACETRACK_USER}
       - SPACETRACK_PASSWORD=${SPACETRACK_PASSWORD}
-      - INGEST_INTERVAL_MS=${INGEST_INTERVAL_MS}
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:${BACKEND_PORT}/health || exit 1"]
       interval: 10s
