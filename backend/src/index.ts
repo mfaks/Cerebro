@@ -12,6 +12,7 @@ import coverageRouter from './routes/coverage.js';
 import eventsRouter from './routes/events.js';
 import ingestRouter from './routes/ingest.js';
 import { startConsumer } from './queue/consumer.js';
+import { startIngestionWorker } from './workers/ingestionWorker.js';
 
 const app = express();
 const server = createServer(app);
@@ -62,6 +63,7 @@ app.use('/api/v1/ingest', ingestRouter);
 
 createWebSocketServer(server);
 await startConsumer();
+startIngestionWorker();
 
 server.listen(PORT, '0.0.0.0', () => {
   console.log(`Cerebro API running on http://localhost:${PORT}`);

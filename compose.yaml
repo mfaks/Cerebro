@@ -52,6 +52,9 @@ services:
       - REDIS_URL=redis://redis:${REDIS_PORT}
       - RABBITMQ_URL=amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@queue:5672
       - FRONTEND_URL=${FRONTEND_URL}
+      - SPACETRACK_USER=${SPACETRACK_USER}
+      - SPACETRACK_PASSWORD=${SPACETRACK_PASSWORD}
+      - INGEST_INTERVAL_MS=${INGEST_INTERVAL_MS}
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:${BACKEND_PORT}/health || exit 1"]
       interval: 10s
@@ -65,19 +68,6 @@ services:
         condition: service_healthy
       queue:
         condition: service_healthy
-
-  seeder:
-    image: node:22-alpine
-    working_dir: /scripts
-    volumes:
-      - ./scripts:/scripts:ro
-    environment:
-      - BACKEND_URL=http://backend:3000
-    command: npx --yes tsx seed-tle.ts
-    depends_on:
-      backend:
-        condition: service_healthy
-    restart: "no"
 
   frontend:
     build:
