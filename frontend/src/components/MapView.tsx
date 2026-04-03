@@ -90,17 +90,21 @@ function MapView({ filters, onAssetsChange }: MapViewProps) {
       popupEnabled: false,
     });
 
+    function onHitTest(event: { x: number; y: number }, response: Awaited<ReturnType<typeof view.hitTest>>) {
+      const hit = response.results.find(
+        (r) => r.type === "graphic" && r.graphic.attributes
+      );
+      if (hit?.type === "graphic") {
+        setTooltip({ x: event.x, y: event.y, asset: hit.graphic.attributes as Asset });
+      } else {
+        setTooltip(null);
+      }
+    }
+
     function handlePointerMove(event: { x: number; y: number }) {
-      void view.hitTest(event).then((response) => {
-        const hit = response.results.find(
-          (r) => r.type === "graphic" && r.graphic.attributes
-        );
-        if (hit?.type === "graphic") {
-          setTooltip({ x: event.x, y: event.y, asset: hit.graphic.attributes as Asset });
-        } else {
-          setTooltip(null);
-        }
-      });
+      view.hitTest(event)
+        .then((response) => onHitTest(event, response))
+        .catch((err: unknown) => console.error("hitTest error", err));
     }
 
     view.when(() => {
