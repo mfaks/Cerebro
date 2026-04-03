@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 vi.mock('../src/db/client.js', () => ({ query: vi.fn() }));
 
 import { query } from '../src/db/client.js';
-import { getAllAssets, getAssetById } from '../src/services/assetService.js';
+import { getAllAssets, getAssetById, getAssetTrack } from '../src/services/assetService.js';
 
 const mockRow = {
   id: '25544',
@@ -61,6 +61,42 @@ describe('getAllAssets', () => {
     expect(sql).toContain('last_updated >=');
     expect(sql).toContain('last_updated <=');
     expect(params).toEqual(['2026-01-01', '2026-12-31']);
+  });
+});
+
+describe('getAssetTrack', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('returns null when asset does not exist', async () => {
+    vi.mocked(query).mockResolvedValue({ rows: [] });
+    const result = await getAssetTrack('nonexistent');
+    expect(result).toBeNull();
+  });
+
+  it('returns track with mapped points when asset exists', async () => {
+    vi.mocked(query)
+      .mockResolvedValueOnce({ rows: [mockRow] }) // getAssetById
+      .mockResolvedValueOnce({
+        rows: [{ latitude: 51.6, longitude: -120.3, altitude: 408.5, time: '2026-03-25T12:00:00Z' }],
+      });
+    const result = await getAssetTrack('25544');
+    expect(result).toEqual({
+      assetId: '25544',
+      points: [{ latitude: 51.6, longitude: -120.3, altitude: 408.5, time: '2026-03-25T12:00:00Z' }],
+    });
+  });
+
+  it('appends time range filters to positions query', async () => {
+    vi.mocked(query)
+      .mockResolvedValueOnce({ rows: [mockRow] })
+      .mockResolvedValueOnce({ rows: [] });
+    await getAssetTrack('25544', '2026-01-01', '2026-12-31');
+    const [sql, params] = vi.mocked(query).mock.calls[1]!;
+    expect(sql).toContain('recorded_at >=');
+    expect(sql).toContain('recorded_at <=');
+    expect(params).toEqual(['25544', '2026-01-01', '2026-12-31']);
   });
 });
 
