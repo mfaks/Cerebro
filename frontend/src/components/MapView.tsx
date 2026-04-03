@@ -12,9 +12,9 @@ esriConfig.apiKey = import.meta.env.VITE_ARCGIS_API_KEY as string;
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL as string;
 
-interface Props {
-  filters: Filters;
-  onAssetsChange: (assets: Asset[]) => void;
+interface MapViewProps {
+  readonly filters: Filters;
+  readonly onAssetsChange: (assets: Asset[]) => void;
 }
 
 interface Tooltip {
@@ -23,7 +23,7 @@ interface Tooltip {
   asset: Asset;
 }
 
-function MapView({ filters, onAssetsChange }: Props) {
+function MapView({ filters, onAssetsChange }: MapViewProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const assetLayerRef = useRef<GraphicsLayer | null>(null);
   const filtersRef = useRef<Filters>(filters);
@@ -62,6 +62,24 @@ function MapView({ filters, onAssetsChange }: Props) {
 
   useEffect(() => {
     let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+    const WS_URL = `${import.meta.env.VITE_WS_BASE_URL as string}/ws/assets`;
+
+    function connectWS() {
+      const ws = new WebSocket(WS_URL);
+      ws.onmessage = (event) => {
+        const assets = JSON.parse(event.data) as Asset[];
+        if (assetLayerRef.current) {
+          renderAssets(assetLayerRef.current, assets);
+          applyFilters(assetLayerRef.current);
+          onAssetsChange(assets);
+        }
+      };
+      ws.onclose = () => {
+        console.log("WebSocket disconnected — retrying in 5s");
+        reconnectTimer = setTimeout(connectWS, 5000);
+      };
+      ws.onerror = (err) => console.error("WebSocket error", err);
+    }
 
     const map = new Map({ basemap: "satellite" });
     const view = new ArcGISMapView({
@@ -71,6 +89,19 @@ function MapView({ filters, onAssetsChange }: Props) {
       zoom: 2,
       popupEnabled: false,
     });
+
+    function handlePointerMove(event: { x: number; y: number }) {
+      void view.hitTest(event).then((response) => {
+        const hit = response.results.find(
+          (r) => r.type === "graphic" && r.graphic.attributes
+        );
+        if (hit?.type === "graphic") {
+          setTooltip({ x: event.x, y: event.y, asset: hit.graphic.attributes as Asset });
+        } else {
+          setTooltip(null);
+        }
+      });
+    }
 
     view.when(() => {
       assetLayerRef.current = createAssetLayer(view);
@@ -86,46 +117,8 @@ function MapView({ filters, onAssetsChange }: Props) {
         })
         .catch((err: unknown) => console.error("Failed to load assets:", err));
 
-      const WS_URL = `${import.meta.env.VITE_WS_BASE_URL as string}/ws/assets`;
-
-      function connectWS() {
-        const ws = new WebSocket(WS_URL);
-
-        ws.onmessage = (event) => {
-          const assets = JSON.parse(event.data) as Asset[];
-          if (assetLayerRef.current) {
-            renderAssets(assetLayerRef.current, assets);
-            applyFilters(assetLayerRef.current);
-            onAssetsChange(assets);
-          }
-        };
-
-        ws.onclose = () => {
-          console.log("WebSocket disconnected — retrying in 5s");
-          reconnectTimer = setTimeout(connectWS, 5000);
-        };
-
-        ws.onerror = (err) => console.error("WebSocket error", err);
-      }
-
       connectWS();
-
-      view.on("pointer-move", (event) => {
-        void view.hitTest(event).then((response) => {
-          const hit = response.results.find(
-            (r) => r.type === "graphic" && r.graphic.attributes
-          );
-          if (hit && hit.type === "graphic") {
-            setTooltip({
-              x: event.x,
-              y: event.y,
-              asset: hit.graphic.attributes as Asset,
-            });
-          } else {
-            setTooltip(null);
-          }
-        });
-      });
+      view.on("pointer-move", handlePointerMove);
     });
 
     return () => {

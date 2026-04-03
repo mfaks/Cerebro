@@ -26,7 +26,11 @@ const TYPE_COLORS: Record<string, string> = {
   DEBRIS: "bg-red-500",
 };
 
-function AssetList({ assets }: { assets: Asset[] }) {
+interface AssetListProps {
+  readonly assets: readonly Asset[];
+}
+
+function AssetList({ assets }: AssetListProps) {
   const sorted = [...assets].sort((a, b) => a.name.localeCompare(b.name));
   return (
     <div className="flex flex-col px-2 py-1">
