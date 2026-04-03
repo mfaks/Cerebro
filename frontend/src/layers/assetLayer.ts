@@ -29,11 +29,6 @@ export function renderAssets(layer: GraphicsLayer, assets: Asset[]): void {
         geometry: point,
         symbol,
         attributes: asset,
-        popupTemplate: {
-          title: "{name}",
-          content:
-            "Type: {type} | Status: {status} | Alt: {position.altitude} km",
-        },
       }),
     );
   });

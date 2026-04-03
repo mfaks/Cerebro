@@ -36,6 +36,7 @@ function renderFilterPanel(filters: Filters, overrides = {}) {
     setAltitudeMin: vi.fn(),
     setAltitudeMax: vi.fn(),
     reset: vi.fn(),
+    assets: [],
     ...overrides,
   };
   const utils = render(

@@ -38,4 +38,5 @@ export interface FilterPanelProps {
   setAltitudeMin: (val: string) => void;
   setAltitudeMax: (val: string) => void;
   reset: () => void;
+  assets: Asset[];
 }

@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -10,10 +11,12 @@ import FilterPanel from "./components/FilterPanel";
 import MapView from "./components/MapView";
 import { ModeToggle } from "./components/ModeToggle";
 import Footer from "./components/Footer";
+import type { Asset } from "./types/types";
 
 function App() {
   const { filters, toggleType, toggleOrbitalRegime, setAltitudeMin, setAltitudeMax, reset } =
     useAssetFilters();
+  const [assets, setAssets] = useState<Asset[]>([]);
 
   return (
     <TooltipProvider>
@@ -25,6 +28,7 @@ function App() {
           setAltitudeMin={setAltitudeMin}
           setAltitudeMax={setAltitudeMax}
           reset={reset}
+          assets={assets}
         />
         <SidebarInset>
           <header className="relative flex h-12 shrink-0 items-center gap-2 border-b border-sidebar-border px-4">
@@ -41,7 +45,7 @@ function App() {
             </div>
           </header>
           <div className="relative flex-1 min-h-0 overflow-hidden">
-            <MapView filters={filters} />
+            <MapView filters={filters} onAssetsChange={setAssets} />
           </div>
           <Footer />
         </SidebarInset>
