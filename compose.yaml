@@ -18,16 +18,6 @@ services:
       retries: 3
       start_period: 10s
 
-  redis:
-    image: redis:8.6.2-alpine
-    ports:
-      - "${REDIS_PORT}:${REDIS_PORT}"
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
-      timeout: 5s
-      retries: 3
-      start_period: 5s
 
   queue:
     image: rabbitmq:4.2.5-alpine
@@ -49,7 +39,6 @@ services:
     environment:
       - PORT=${BACKEND_PORT}
       - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
-      - REDIS_URL=redis://redis:${REDIS_PORT}
       - RABBITMQ_URL=amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@queue:5672
       - FRONTEND_URL=${FRONTEND_URL}
       - SPACETRACK_USER=${SPACETRACK_USER}
@@ -63,8 +52,6 @@ services:
       start_period: 15s
     depends_on:
       postgres:
-        condition: service_healthy
-      redis:
         condition: service_healthy
       queue:
         condition: service_healthy
