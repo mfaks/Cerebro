@@ -18,7 +18,6 @@ services:
       retries: 3
       start_period: 10s
 
-
   queue:
     image: rabbitmq:4.2.5-alpine
     ports:
@@ -64,9 +63,31 @@ services:
       - VITE_ARCGIS_API_KEY=${VITE_ARCGIS_API_KEY}
       - VITE_API_BASE_URL=${VITE_API_BASE_URL}
       - VITE_WS_BASE_URL=${VITE_WS_BASE_URL}
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
     depends_on:
       backend:
         condition: service_healthy
+
+  prometheus:
+    image: prom/prometheus:v3.4.0
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./observability/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    depends_on:
+      backend:
+        condition: service_healthy
+
+  grafana:
+    image: grafana/grafana:12.0.1
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin}
+    volumes:
+      - ./observability/grafana/provisioning:/etc/grafana/provisioning:ro
+      - grafana-data:/var/lib/grafana
+    depends_on:
+      - prometheus
+
+volumes:
+  grafana-data:
