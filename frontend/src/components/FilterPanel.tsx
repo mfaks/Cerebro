@@ -20,7 +20,7 @@ const TYPE_LABELS: Record<AssetType, string> = {
   ROCKET_BODY: "Rocket Body",
 };
 
-const TYPE_COLORS: Record<string, string> = {
+const TYPE_COLORS: Record<AssetType, string> = {
   PAYLOAD: "bg-lime-500",
   ROCKET_BODY: "bg-lime-500",
   DEBRIS: "bg-red-500",
@@ -43,7 +43,7 @@ function AssetList({ assets }: AssetListProps) {
           className="flex flex-col gap-0.5 rounded px-2 py-2 hover:bg-sidebar-accent border-b border-sidebar-border last:border-0"
         >
           <div className="flex items-center gap-2">
-            <span className={`h-2 w-2 shrink-0 rounded-full ${TYPE_COLORS[asset.type] ?? "bg-gray-400"}`} />
+            <span className={`h-2 w-2 shrink-0 rounded-full ${TYPE_COLORS[asset.type]}`} />
             <span className="flex-1 truncate text-sm font-medium text-sidebar-foreground">{asset.name}</span>
           </div>
           <div className="flex items-center justify-between pl-4">

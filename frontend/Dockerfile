@@ -14,4 +14,4 @@ USER node
 
 EXPOSE 5173
 
-CMD ["npm", "run", "dev"]
+CMD ["sh", "-c", "npm run build && npm run preview"]
