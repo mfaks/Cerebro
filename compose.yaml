@@ -36,14 +36,15 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - PORT=${BACKEND_PORT}
+      - PORT=${PORT}
       - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       - RABBITMQ_URL=amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@queue:5672
       - FRONTEND_URL=${FRONTEND_URL}
       - SPACETRACK_USER=${SPACETRACK_USER}
       - SPACETRACK_PASSWORD=${SPACETRACK_PASSWORD}
+      - INGEST_INTERVAL_MS=${INGEST_INTERVAL_MS}
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:${BACKEND_PORT}/health || exit 1"]
+      test: ["CMD-SHELL", "curl -f http://localhost:${PORT}/health || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 3

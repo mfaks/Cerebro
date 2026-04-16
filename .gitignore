@@ -41,6 +41,3 @@ lerna-debug.log*
 *.njsproj
 *.sln
 *.sw?
-
-# Environment variables
-.env
