@@ -7,7 +7,7 @@ import {
   degreesLat,
   degreesLong,
 } from 'satellite.js';
-import { getConnection, closeConnection, EXCHANGE } from './connection.js';
+import { getConnection, EXCHANGE } from './connection.js';
 import { upsertAsset } from '../services/assetService.js';
 import type { Asset, TLEPayload } from '../types/types.js';
 

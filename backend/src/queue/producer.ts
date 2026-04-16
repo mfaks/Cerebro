@@ -1,5 +1,5 @@
 import type amqplib from 'amqplib';
-import { getConnection, closeConnection, EXCHANGE } from './connection.js';
+import { getConnection, EXCHANGE } from './connection.js';
 
 let channel: amqplib.Channel | null = null;
 
