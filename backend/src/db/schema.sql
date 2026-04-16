@@ -8,15 +8,16 @@ CREATE TABLE IF NOT EXISTS assets (
   geom          geometry(Point, 4326) NOT NULL,
   altitude      NUMERIC NOT NULL,
   speed         NUMERIC NOT NULL,
-  heading       NUMERIC NOT NULL,
-  country       TEXT NOT NULL,
+  inclination   NUMERIC NOT NULL,
+  country       TEXT,
   launch_date   DATE,
-  rcs_size      TEXT NOT NULL CHECK (rcs_size IN ('SMALL', 'MEDIUM', 'LARGE')),
+  rcs_size      TEXT CHECK (rcs_size IN ('SMALL', 'MEDIUM', 'LARGE')),
   last_updated  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE INDEX IF NOT EXISTS assets_geom_idx ON assets USING GIST (geom);
-CREATE INDEX IF NOT EXISTS assets_type_idx ON assets (type);
+CREATE INDEX IF NOT EXISTS assets_geom_idx         ON assets USING GIST (geom);
+CREATE INDEX IF NOT EXISTS assets_type_idx         ON assets (type);
+CREATE INDEX IF NOT EXISTS assets_last_updated_idx ON assets (last_updated);
 
 CREATE TABLE IF NOT EXISTS coverage_zones (
   id          TEXT PRIMARY KEY,

@@ -10,11 +10,18 @@ interface AssetRow {
   longitude: number;
   altitude: number;
   speed: number;
-  heading: number;
-  country: string;
+  inclination: number;
+  country: string | null;
   launch_date: string | null;
-  rcs_size: string;
+  rcs_size: string | null;
   last_updated: string;
+}
+
+interface PositionRow {
+  latitude: number;
+  longitude: number;
+  altitude: number;
+  time: string;
 }
 
 function rowToAsset(row: AssetRow): Asset {
@@ -30,7 +37,7 @@ function rowToAsset(row: AssetRow): Asset {
     },
     velocity: {
       speed: Number(row.speed),
-      heading: Number(row.heading),
+      inclination: Number(row.inclination),
     },
     lastUpdated: row.last_updated,
     metadata: {
@@ -46,13 +53,15 @@ const BASE_SELECT = `
     id, name, type, status,
     ST_Y(geom) AS latitude,
     ST_X(geom) AS longitude,
-    altitude, speed, heading,
+    altitude, speed, inclination,
     country, launch_date, rcs_size, last_updated
   FROM assets
 `;
 
+// function to get all assets
 export async function getAllAssets(q: AssetQuery): Promise<Asset[]> {
   const params: unknown[] = [];
+  // WHERE 1=1 lets every optional filter append AND without special-casing the first clause
   let sql = BASE_SELECT + ' WHERE 1=1';
 
   if (q.type) {
@@ -72,6 +81,7 @@ export async function getAllAssets(q: AssetQuery): Promise<Asset[]> {
   return result.rows.map(rowToAsset);
 }
 
+// function to get an asset by ID
 export async function getAssetById(id: string): Promise<Asset | null> {
   const result = await query<AssetRow>(
     BASE_SELECT + ' WHERE id = $1',
@@ -81,6 +91,7 @@ export async function getAssetById(id: string): Promise<Asset | null> {
   return row ? rowToAsset(row) : null;
 }
 
+// function to get a track for an asset
 export async function getAssetTrack(
   id: string,
   startTime?: string,
@@ -105,13 +116,6 @@ export async function getAssetTrack(
   }
   sql += ' ORDER BY recorded_at ASC';
 
-  interface PositionRow {
-    latitude: number;
-    longitude: number;
-    altitude: number;
-    time: string;
-  }
-
   const result = await query<PositionRow>(sql, params);
   const points: TrackPoint[] = result.rows.map((r) => ({
     latitude: Number(r.latitude),
@@ -123,12 +127,14 @@ export async function getAssetTrack(
   return { assetId: id, points };
 }
 
-export async function insertPosition(
+// function to insert a position for an asset
+async function insertPosition(
   assetId: string,
   latitude: number,
   longitude: number,
   altitude: number,
 ): Promise<void> {
+  // ST_MakePoint takes (longitude, latitude) — x/y order, opposite to our param order
   await query(
     `INSERT INTO positions (asset_id, geom, altitude)
      VALUES ($1, ST_SetSRID(ST_MakePoint($3, $2), 4326), $4)`,
@@ -136,10 +142,12 @@ export async function insertPosition(
   );
 }
 
+// function to update/insert an asset
 export async function upsertAsset(asset: Asset): Promise<void> {
+  // ST_MakePoint takes (longitude, latitude) — x/y order, opposite to our param order
   await query(
     `INSERT INTO assets
-       (id, name, type, status, geom, altitude, speed, heading, country, launch_date, rcs_size, last_updated)
+       (id, name, type, status, geom, altitude, speed, inclination, country, launch_date, rcs_size, last_updated)
      VALUES
        ($1, $2, $3, $4, ST_SetSRID(ST_MakePoint($6, $5), 4326), $7, $8, $9, $10, $11, $12, $13)
      ON CONFLICT (id) DO UPDATE SET
@@ -149,16 +157,18 @@ export async function upsertAsset(asset: Asset): Promise<void> {
        geom         = EXCLUDED.geom,
        altitude     = EXCLUDED.altitude,
        speed        = EXCLUDED.speed,
-       heading      = EXCLUDED.heading,
-       last_updated = EXCLUDED.last_updated`,
+       inclination  = EXCLUDED.inclination,
+       last_updated = EXCLUDED.last_updated
+     -- country, launch_date, rcs_size not in TLE data; preserved from initial insert`,
     [
       asset.id, asset.name, asset.type, asset.status,
       asset.position.latitude, asset.position.longitude, asset.position.altitude,
-      asset.velocity.speed, asset.velocity.heading,
+      asset.velocity.speed, asset.velocity.inclination,
       asset.metadata.country, asset.metadata.launchDate, asset.metadata.rcsSize,
       asset.lastUpdated,
     ],
   );
+  // also append a position history record on every update/insert
   await insertPosition(
     asset.id,
     asset.position.latitude,

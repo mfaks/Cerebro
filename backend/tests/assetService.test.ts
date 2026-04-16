@@ -14,7 +14,7 @@ const mockRow = {
   longitude: -120.3,
   altitude: 408.5,
   speed: 7.66,
-  heading: 51.6,
+  inclination: 51.6,
   country: 'US',
   launch_date: '1998-11-20',
   rcs_size: 'LARGE',
@@ -35,7 +35,7 @@ describe('getAllAssets', () => {
       name: 'ISS (ZARYA)',
       type: 'PAYLOAD',
       position: { latitude: 51.6, longitude: -120.3, altitude: 408.5 },
-      velocity: { speed: 7.66, heading: 51.6 },
+      velocity: { speed: 7.66, inclination: 51.6 },
     });
   });
 

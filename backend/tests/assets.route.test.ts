@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import express from 'express';
 import request from 'supertest';
+import type { Asset, AssetTrack } from '../src/types/types.js';
 
 vi.mock('../src/services/assetService.js', () => ({
   getAllAssets: vi.fn(),
@@ -15,13 +16,13 @@ const app = express();
 app.use(express.json());
 app.use('/', assetsRouter);
 
-const mockAsset = {
+const mockAsset: Asset = {
   id: '25544',
   name: 'ISS (ZARYA)',
   type: 'PAYLOAD',
   status: 'ACTIVE',
   position: { latitude: 51.6, longitude: -120.3, altitude: 408.5 },
-  velocity: { speed: 7.66, heading: 51.6 },
+  velocity: { speed: 7.66, inclination: 51.6 },
   lastUpdated: '2026-03-25T12:00:00Z',
   metadata: { country: 'US', launchDate: '1998-11-20', rcsSize: 'LARGE' },
 };
@@ -30,7 +31,7 @@ describe('GET /assets', () => {
   beforeEach(() => vi.clearAllMocks());
 
   it('returns 200 with data and total', async () => {
-    vi.mocked(getAllAssets).mockResolvedValue([mockAsset] as never);
+    vi.mocked(getAllAssets).mockResolvedValue([mockAsset]);
     const res = await request(app).get('/');
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ data: [mockAsset], total: 1 });
@@ -47,7 +48,7 @@ describe('GET /assets/:id', () => {
   beforeEach(() => vi.clearAllMocks());
 
   it('returns 200 with asset when found', async () => {
-    vi.mocked(getAssetById).mockResolvedValue(mockAsset as never);
+    vi.mocked(getAssetById).mockResolvedValue(mockAsset);
     const res = await request(app).get('/25544');
     expect(res.status).toBe(200);
     expect(res.body.id).toBe('25544');
@@ -65,7 +66,8 @@ describe('GET /assets/:id/track', () => {
   beforeEach(() => vi.clearAllMocks());
 
   it('returns 200 with track when asset exists', async () => {
-    vi.mocked(getAssetTrack).mockResolvedValue({ assetId: '25544', points: [] } as never);
+    const mockTrack: AssetTrack = { assetId: '25544', points: [] };
+    vi.mocked(getAssetTrack).mockResolvedValue(mockTrack);
     const res = await request(app).get('/25544/track');
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ assetId: '25544', points: [] });
