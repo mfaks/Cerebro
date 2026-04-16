@@ -8,16 +8,16 @@ vi.mock('@arcgis/core/views/MapView', () => ({ default: vi.fn() }));
 
 import SimpleMarkerSymbol from '@arcgis/core/symbols/SimpleMarkerSymbol';
 import { renderAssets } from '../../src/layers/assetLayer';
-import type { Asset } from '../../src/types/types';
+import type { Asset, AssetType } from '../../src/types/types';
 
-function makeAsset(type: string, altitude = 400): Asset {
+function makeAsset(type: AssetType, altitude = 400): Asset {
   return {
     id: '1',
     name: 'TEST',
     type,
     status: 'ACTIVE',
     position: { latitude: 0, longitude: 0, altitude },
-    velocity: { speed: 7, heading: 0 },
+    velocity: { speed: 7, inclination: 0 },
     lastUpdated: '2026-01-01T00:00:00Z',
     metadata: { country: 'US', launchDate: null, rcsSize: 'LARGE' },
   };

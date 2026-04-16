@@ -9,14 +9,14 @@ export interface Asset {
   };
   velocity: {
     speed: number;
-    heading: number;
+    inclination: number;
   };
   status: 'ACTIVE' | 'INACTIVE' | 'UNTRACKED';
   lastUpdated: string;
   metadata: {
-    country: string;
+    country: string | null;
     launchDate: string | null;
-    rcsSize: 'SMALL' | 'MEDIUM' | 'LARGE';
+    rcsSize: 'SMALL' | 'MEDIUM' | 'LARGE' | null;
   };
 }
 

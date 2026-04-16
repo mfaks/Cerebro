@@ -9,9 +9,11 @@ import type { AssetQuery } from '../types/types.js';
 
 const router = Router();
 
+// function to get all assets
 router.get('/', async (req: Request, res: Response): Promise<void> => {
   const q = req.query;
   const query: AssetQuery = {};
+  // repeated query params arrive as arrays in Express; only accept plain string values
   if (typeof q['type'] === 'string') query.type = q['type'];
   if (typeof q['startTime'] === 'string') query.startTime = q['startTime'];
   if (typeof q['endTime'] === 'string') query.endTime = q['endTime'];
@@ -19,6 +21,7 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
   res.json({ data: assets, total: assets.length });
 });
 
+// function to get an asset by ID
 router.get('/:id', async (req: Request<{ id: string }>, res: Response): Promise<void> => {
   const asset = await getAssetById(req.params.id);
   if (!asset) {
@@ -28,6 +31,7 @@ router.get('/:id', async (req: Request<{ id: string }>, res: Response): Promise<
   res.json(asset);
 });
 
+// function to get a track for an asset
 router.get('/:id/track', async (req: Request<{ id: string }>, res: Response): Promise<void> => {
   const { startTime, endTime } = req.query;
   const track = await getAssetTrack(

@@ -8,7 +8,7 @@ interface CoverageRow {
   created_at: string;
 }
 
-// Fetch all coverage zones from the database, ordered by creation time descending
+// function to get all coverage zones
 export async function getAllCoverageZones(): Promise<CoverageZone[]> {
   const result = await query<CoverageRow>(
     `SELECT id, asset_id, ST_AsGeoJSON(polygon) AS polygon, created_at
@@ -16,6 +16,7 @@ export async function getAllCoverageZones(): Promise<CoverageZone[]> {
      ORDER BY created_at DESC`,
   );
 
+  // map the database rows to the CoverageZone shape
   return result.rows.map((row) => ({
     id: row.id,
     assetId: row.asset_id,

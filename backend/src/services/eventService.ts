@@ -14,15 +14,19 @@ export interface EventQuery {
   type?: string;
 }
 
-// Fetch all events from the database, optionally filtered by asset ID and/or event type, ordered by time descending
+// function to get all events
 export async function getAllEvents(q: EventQuery = {}): Promise<SatelliteEvent[]> {
   const params: unknown[] = [];
+  // WHERE 1=1 lets every optional filter append AND without special-casing the first clause
   let sql = `SELECT id, type, asset_id, time, details FROM events WHERE 1=1`;
 
+  // push the assetId filter to the SQL query if provided
   if (q.assetId) {
     params.push(q.assetId);
     sql += ` AND asset_id = $${params.length}`;
   }
+
+  // push the type filter to the SQL query if provided
   if (q.type) {
     params.push(q.type);
     sql += ` AND type = $${params.length}`;
@@ -30,6 +34,7 @@ export async function getAllEvents(q: EventQuery = {}): Promise<SatelliteEvent[]
 
   sql += ` ORDER BY time DESC`;
 
+  // execute the SQL query and map the database rows to the SatelliteEvent shape
   const result = await query<EventRow>(sql, params);
   return result.rows.map((row) => ({
     id: row.id,

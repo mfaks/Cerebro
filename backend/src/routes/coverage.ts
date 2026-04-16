@@ -4,8 +4,7 @@ import { getAllCoverageZones } from '../services/coverageService.js';
 
 const router = Router();
 
-// GET /api/v1/coverage
-// Returns coverage zone polygons for all sensor assets.
+// function to get all coverage zones
 router.get('/', async (_req: Request, res: Response): Promise<void> => {
   const zones = await getAllCoverageZones();
   res.json({ data: zones, total: zones.length });

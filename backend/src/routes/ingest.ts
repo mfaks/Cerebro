@@ -5,8 +5,7 @@ import type { TLEPayload } from '../types/types.js';
 
 const router = Router();
 
-// POST /api/v1/ingest/tle
-// Accepts a TLE payload and publishes it to the RabbitMQ exchange.
+// function to ingest a TLE payload
 router.post('/tle', async (req: Request, res: Response): Promise<void> => {
   const payload = req.body as TLEPayload;
 
@@ -15,6 +14,7 @@ router.post('/tle', async (req: Request, res: Response): Promise<void> => {
     return;
   }
 
+  // publish the TLE payload to RabbitMQ
   await publish('tle.ingest', payload);
   res.status(202).json({ message: 'TLE queued for processing' });
 });

@@ -4,9 +4,10 @@ import Map from "@arcgis/core/Map.js";
 import ArcGISMapView from "@arcgis/core/views/MapView.js";
 import GraphicsLayer from "@arcgis/core/layers/GraphicsLayer.js";
 import { createAssetLayer, renderAssets } from "../layers/assetLayer";
-import type { Asset, AssetType, OrbitalRegime, Filters } from "../types/types";
+import type { Asset, OrbitalRegime, Filters } from "../types/types";
 import { REGIME_BOUNDS } from "../hooks/useAssetFilters";
 
+// must be set before any ArcGIS components are instantiated
 esriConfig.apiKey = import.meta.env.VITE_ARCGIS_API_KEY as string;
 
 
@@ -26,6 +27,7 @@ interface Tooltip {
 function MapView({ filters, onAssetsChange }: MapViewProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const assetLayerRef = useRef<GraphicsLayer | null>(null);
+  // ref lets applyFilters read current filters without being recreated on every filter change
   const filtersRef = useRef<Filters>(filters);
   const [tooltip, setTooltip] = useState<Tooltip | null>(null);
 
@@ -38,7 +40,7 @@ function MapView({ filters, onAssetsChange }: MapViewProps) {
 
     layer.graphics.forEach((graphic) => {
       const asset = graphic.attributes as Asset;
-      let visible = currentFilters.types.has(asset.type as AssetType);
+      let visible = currentFilters.types.has(asset.type);
 
       if (visible) {
         const alt = asset.position.altitude;
@@ -87,6 +89,7 @@ function MapView({ filters, onAssetsChange }: MapViewProps) {
       map,
       center: [0, 0],
       zoom: 2,
+      // disabled in favour of the custom pointer-move tooltip
       popupEnabled: false,
     });
 
@@ -129,7 +132,7 @@ function MapView({ filters, onAssetsChange }: MapViewProps) {
       if (reconnectTimer) clearTimeout(reconnectTimer);
       view.destroy();
     };
-  }, [applyFilters]);
+  }, [applyFilters, onAssetsChange]);
 
   useEffect(() => {
     const layer = assetLayerRef.current;

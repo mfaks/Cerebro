@@ -1,25 +1,25 @@
-import amqplib from 'amqplib';
+import type amqplib from 'amqplib';
+import { getConnection, EXCHANGE } from './connection.js';
 
-const EXCHANGE = 'cerebro';
 let channel: amqplib.Channel | null = null;
 
-// Get or create a RabbitMQ channel for published messages
-// Caches the channel for reuse across multiple publish calls
+// function to get the channel to the RabbitMQ server
 async function getChannel(): Promise<amqplib.Channel> {
   if (channel) return channel;
-
-  const url = process.env['RABBITMQ_URL'];
-  if (!url) throw new Error('RABBITMQ_URL environment variable is required');
-
-  const connection = await amqplib.connect(url);
-  channel = await connection.createChannel();
-  await channel.assertExchange(EXCHANGE, 'topic', { durable: true });
-  return channel;
+  const conn = await getConnection();
+  const ch = await conn.createChannel();
+  await ch.assertExchange(EXCHANGE, 'topic', { durable: true });
+  channel = ch;
+  return ch;
 }
 
+// function to publish a message to the RabbitMQ server
 export async function publish(routingKey: string, payload: unknown): Promise<void> {
   const ch = await getChannel();
-  ch.publish(EXCHANGE, routingKey, Buffer.from(JSON.stringify(payload)), {
+  const ok = ch.publish(EXCHANGE, routingKey, Buffer.from(JSON.stringify(payload)), {
     persistent: true,
   });
+  if (!ok) {
+    console.warn('RabbitMQ channel buffer full — message may be dropped');
+  }
 }

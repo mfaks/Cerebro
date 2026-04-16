@@ -1,7 +1,7 @@
 export interface Asset {
   id: string;
   name: string;
-  type: string;
+  type: AssetType;
   position: {
     latitude: number;
     longitude: number;
@@ -9,14 +9,14 @@ export interface Asset {
   };
   velocity: {
     speed: number;
-    heading: number;
+    inclination: number;
   };
-  status: string;
-  lastUpdated?: string;
+  status: 'ACTIVE' | 'INACTIVE' | 'UNTRACKED';
+  lastUpdated: string;
   metadata: {
-    country: string;
+    country: string | null;
     launchDate: string | null;
-    rcsSize: string;
+    rcsSize: string | null;
   };
 }
 
