@@ -1,4 +1,5 @@
 import express from 'express';
+import type { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import { createServer } from 'http';
@@ -35,11 +36,15 @@ app.get('/metrics', async (_req, res) => {
   res.end(await register.metrics());
 });
 
-
 app.use('/api/v1/assets', assetsRouter);
 app.use('/api/v1/coverage', coverageRouter);
 app.use('/api/v1/events', eventsRouter);
 app.use('/api/v1/ingest', ingestRouter);
+
+app.use((err: unknown, _req: Request, res: Response, _next: NextFunction): void => {
+  console.error(err);
+  res.status(500).json({ error: 'Internal server error' });
+});
 
 createWebSocketServer(server);
 await startConsumer();

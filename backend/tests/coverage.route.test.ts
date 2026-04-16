@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import express from 'express';
 import request from 'supertest';
+import type { CoverageZone } from '../src/types/types.js';
 
 vi.mock('../src/services/coverageService.js', () => ({
   getAllCoverageZones: vi.fn(),
@@ -24,13 +25,13 @@ describe('GET /coverage', () => {
   });
 
   it('returns 200 with zones and correct total', async () => {
-    const mockZone = {
+    const mockZone: CoverageZone = {
       id: 'zone-1',
       assetId: '25544',
-      polygon: [[[0, 0], [1, 0], [1, 1], [0, 1], [0, 0]]],
+      polygon: [[0, 0], [1, 0], [1, 1], [0, 1], [0, 0]],
       timestamp: '2026-03-25T12:00:00Z',
     };
-    vi.mocked(getAllCoverageZones).mockResolvedValue([mockZone] as never);
+    vi.mocked(getAllCoverageZones).mockResolvedValue([mockZone]);
     const res = await request(app).get('/');
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ data: [mockZone], total: 1 });
