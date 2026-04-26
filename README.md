@@ -1,6 +1,29 @@
 # Cerebro
 
-A live satellite tracker. Pulls TLE data from Space-Track.org on a schedule, runs SGP4 orbit propagation to compute real-time positions, and streams live updates to the browser over WebSocket.
+A live satellite tracker. Pulls TLE data from Space-Track.org on a schedule, runs SGP4 orbit propagation to compute positions, and streams live updates to the browser over WebSocket.
+
+## Display
+
+<table>
+  <tr>
+    <td align="center">
+      <strong>Home Dashboard</strong><br />
+      <img width="100%" alt="Cerebro home dashboard" src="https://github.com/user-attachments/assets/702ba71b-98a2-40b1-9694-e360d7451fe4" />
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <strong>Satellite Assets</strong><br />
+      <img width="100%" alt="Satellite assets view" src="https://github.com/user-attachments/assets/91d9e03f-203b-45f1-82a8-165238df8a6c" />
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <strong>Grafana Monitoring</strong><br />
+      <img width="75%" alt="Grafana monitoring dashboard" src="https://github.com/user-attachments/assets/11d0d4e3-5071-4c21-b7de-c2ed6a674a29" />
+    </td>
+  </tr>
+</table>
 
 ---
 
@@ -38,12 +61,10 @@ A live satellite tracker. Pulls TLE data from Space-Track.org on a schedule, run
 ## Features
 
 - Live satellite positions streamed over WebSocket as TLEs are ingested
-- SGP4 orbit propagation via satellite.js — lat, lon, altitude computed from raw TLE data
+- SGP4 orbit propagation via satellite.js with lat, lon, altitude computed from raw TLE data
 - Interactive ArcGIS satellite basemap with hover tooltips (name, type, altitude, speed)
 - Filter by object type (Payload, Debris, Rocket Body), orbital regime (LEO/MEO/GEO/HEO), and altitude range
 - Scheduled TLE ingestion with a dead-letter queue for malformed messages
-- Prometheus + Grafana observability out of the box
-- Light / dark mode, persisted
 
 ---
 
@@ -71,7 +92,7 @@ Browser
 | Service    | Port  | What it does                                            |
 |------------|-------|---------------------------------------------------------|
 | frontend   | 5173  | React SPA (S3 + CloudFront in production)               |
-| backend    | 3000  | REST API, WebSocket server, TLE ingestion — one process |
+| backend    | 3000  | REST API, WebSocket server, and TLE ingestion in one process |
 | postgres   | 5432  | Stores assets, position history, events, coverage zones |
 | rabbitmq   | 5672  | Decouples TLE fetching from DB writes                   |
 | prometheus | 9090  | Scrapes backend Node.js metrics every 15s               |
@@ -81,7 +102,7 @@ Browser
 
 ## RabbitMQ Flow
 
-The producer and consumer both live inside the backend process. TLE fetching is fully decoupled from DB writes — if the consumer is slow or a message is malformed, it never blocks the ingest cycle.
+The producer and consumer both live inside the backend process. TLE fetching is fully decoupled from DB writes. If the consumer is slow or a message is malformed, it never blocks the ingest cycle.
 
 ```
 Space-Track.org
@@ -105,10 +126,10 @@ Space-Track.org
               DLQ consumer logs and acks the message
 ```
 
-A few deliberate choices worth calling out:
-- **`requeue: false` on nack** — a malformed TLE would loop forever if requeued; routing it to the DLQ keeps the main queue healthy and preserves the bad message for inspection
-- **`persistent: true` on publish** — messages survive a RabbitMQ restart mid-cycle
-- **Topic exchange** — makes it easy to add new routing keys (e.g. `tle.historical`) later without touching the consumer binding
+Notable decisions:
+- **`requeue: false` on nack**: a malformed TLE would loop forever if requeued; the DLQ keeps the main queue healthy and preserves the bad message for inspection
+- **`persistent: true` on publish**: messages survive a RabbitMQ restart mid-cycle
+- **Topic exchange** makes it easy to add new routing keys (e.g. `tle.historical`) later without touching the consumer binding
 
 ---
 
@@ -121,7 +142,7 @@ A few deliberate choices worth calling out:
     │                    │                                             │
     ├─ HTTPS ──► CloudFront ──► S3  (React static build)              │
     │                    │                                             │
-    └─ HTTP/WS ──────────┼──► Elastic IP ──► EC2 t3.small             │
+    └─ HTTPS/WSS ─────────┼──► Elastic IP ──► EC2 t3.small             │
                          │                     │  (Docker Compose)     │
                          │                     ├── backend    :3000    │
                          │                     ├── postgres   :5432    │
@@ -129,7 +150,7 @@ A few deliberate choices worth calling out:
                          │                     ├── prometheus :9090    │
                          │                     └── grafana    :3001    │
                          │                                             │
-                         │  Security Group: inbound 22, 3000 only      │
+                         │  Security Group: inbound 3000 only          │
                          └─────────────────────────────────────────────┘
                                        ▲
                               ECR  cerebro-backend
@@ -138,12 +159,12 @@ A few deliberate choices worth calling out:
 
 | Resource        | Detail                                                                  |
 |-----------------|-------------------------------------------------------------------------|
-| EC2             | `t3.small`, Amazon Linux 2023, 20 GB gp3 EBS (encrypted)               |
-| Elastic IP      | Stable public IP — baked into the frontend build as `VITE_API_BASE_URL` |
+| EC2             | `t3.small`, Amazon Linux 2023, 30 GB gp3 EBS (encrypted)               |
+| Elastic IP      | Stable public IP used by CloudFront to proxy API and WebSocket traffic  |
 | ECR             | `cerebro-backend` repo; mutable tags; CVE scan on push                  |
 | S3              | Private bucket; objects only reachable through CloudFront               |
-| CloudFront      | HTTPS, edge caching, OAC signing; 403/404 → `index.html` for SPA routing|
-| IAM             | EC2 instance profile with `ECRReadOnly` — no credentials on disk        |
+| CloudFront      | HTTPS, edge caching, OAC signing; 403/404 routed to `index.html`        |
+| IAM             | EC2 instance profile with `ECRReadOnly`; no credentials stored on disk  |
 
 ---
 
@@ -168,16 +189,18 @@ docker compose up
 
 ## Deploying to AWS
 
-The full backend stack runs on a single EC2 t3.small via Docker Compose. The frontend is served from S3 + CloudFront. Budget roughly $25–35/month if you leave it running.
+The full backend stack runs on a single EC2 t3.small via Docker Compose. The frontend is served from S3 + CloudFront. Budget roughly $25-35/month if you leave it running.
 
-You'll need Terraform >= 1.9, AWS CLI >= 2, Docker, and an EC2 key pair (create one in the console first).
+You'll need Terraform >= 1.9, AWS CLI >= 2, and Docker.
 
 ```bash
 aws configure               # key, secret, region
 aws sts get-caller-identity # verify credentials
 ```
 
-### Step 1 — provision infrastructure
+### Deploy
+
+One `terraform apply` does everything: builds and pushes the backend image to ECR, provisions all infrastructure, starts the stack on EC2, builds the frontend, syncs it to S3, and invalidates the CloudFront cache. If you're on Apple Silicon, `--platform linux/amd64` is handled automatically since the EC2 host is x86_64.
 
 ```bash
 cd terraform
@@ -185,71 +208,38 @@ terraform init
 
 terraform apply \
   -var="ssh_key_name=<your-key-pair-name>" \
-  -var="github_repo_url=https://github.com/<you>/cerebro" \
   -var="postgres_password=$POSTGRES_PASSWORD" \
   -var="rabbitmq_password=$RABBITMQ_PASSWORD" \
   -var="spacetrack_user=$SPACETRACK_USER" \
   -var="spacetrack_password=$SPACETRACK_PASSWORD" \
   -var="arcgis_api_key=$VITE_ARCGIS_API_KEY" \
-  -var="image_tag=latest"
+  -var="grafana_admin_password=$GRAFANA_ADMIN_PASSWORD" \
+  -var="image_tag=$(git rev-parse --short HEAD)"
 ```
 
-This provisions the VPC, EC2, Elastic IP, ECR repo, S3 bucket, and CloudFront distribution (~2–3 min). The instance installs Docker and writes `compose.prod.yaml` on boot but won't start the stack yet — the ECR image doesn't exist yet.
-
-### Step 2 — build and push the backend image
-
-Built on Apple Silicon — `--platform linux/amd64` is required since the EC2 host is x86_64.
-
-```bash
-TAG=$(git rev-parse --short HEAD)
-
-aws ecr get-login-password --region us-east-1 \
-  | docker login --username AWS --password-stdin <ecr_registry>
-
-docker buildx build --platform linux/amd64 \
-  -f backend/Dockerfile \
-  -t <ecr_backend_url>:$TAG \
-  --push ./backend
-```
-
-### Step 3 — start the stack
-
-```bash
-ssh -i ~/.ssh/<key>.pem ec2-user@<elastic-ip> 'bash /opt/cerebro/start.sh'
-```
-
-### Step 4 — build and upload the frontend
-
-```bash
-cd frontend
-VITE_API_BASE_URL=http://<elastic-ip>:3000 \
-VITE_WS_BASE_URL=ws://<elastic-ip>:3000 \
-VITE_ARCGIS_API_KEY=$VITE_ARCGIS_API_KEY \
-  npm run build
-
-aws s3 sync dist/ s3://<s3_bucket> --delete
-```
-
-### Step 5 — access
+### Access
 
 | Surface    | How                                                                               |
 |------------|-----------------------------------------------------------------------------------|
 | Frontend   | `cloudfront_url` from Terraform output                                            |
-| Backend    | `http://<elastic-ip>:3000`                                                        |
-| Grafana    | `ssh -L 3001:localhost:3001 ec2-user@<elastic-ip>` → http://localhost:3001        |
-| Prometheus | `ssh -L 9090:localhost:9090 ec2-user@<elastic-ip>` → http://localhost:9090        |
+| Backend    | `backend_url` from Terraform output (proxied through CloudFront)                  |
+| Grafana    | `ssh -L 3001:localhost:3001 ec2-user@<server_ip>` then http://localhost:3001      |
+| Prometheus | `ssh -L 9090:localhost:9090 ec2-user@<server_ip>` then http://localhost:9090      |
 
 ### Deploying an update
 
+Pass a new `image_tag` and re-apply. Terraform rebuilds the image, pushes it, restarts the stack, and redeploys the frontend.
+
 ```bash
-TAG=$(git rev-parse --short HEAD)
-
-docker buildx build --platform linux/amd64 \
-  -f backend/Dockerfile \
-  -t <ecr_backend_url>:$TAG \
-  --push ./backend
-
-ssh -i ~/.ssh/<key>.pem ec2-user@<elastic-ip> 'bash /opt/cerebro/start.sh'
+terraform apply \
+  -var="ssh_key_name=<your-key-pair-name>" \
+  -var="postgres_password=$POSTGRES_PASSWORD" \
+  -var="rabbitmq_password=$RABBITMQ_PASSWORD" \
+  -var="spacetrack_user=$SPACETRACK_USER" \
+  -var="spacetrack_password=$SPACETRACK_PASSWORD" \
+  -var="arcgis_api_key=$VITE_ARCGIS_API_KEY" \
+  -var="grafana_admin_password=$GRAFANA_ADMIN_PASSWORD" \
+  -var="image_tag=$(git rev-parse --short HEAD)"
 ```
 
 ### Tearing down
@@ -258,12 +248,12 @@ ssh -i ~/.ssh/<key>.pem ec2-user@<elastic-ip> 'bash /opt/cerebro/start.sh'
 aws s3 rm s3://<s3_bucket> --recursive
 cd terraform && terraform destroy \
   -var="ssh_key_name=x" \
-  -var="github_repo_url=x" \
   -var="postgres_password=x" \
   -var="rabbitmq_password=x" \
   -var="spacetrack_user=x" \
   -var="spacetrack_password=x" \
-  -var="arcgis_api_key=x"
+  -var="arcgis_api_key=x" \
+  -var="grafana_admin_password=x"
 ```
 
 ---
