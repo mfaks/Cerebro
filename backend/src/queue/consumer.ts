@@ -62,6 +62,8 @@ export async function startConsumer(): Promise<void> {
 
 // function to convert a TLE payload to an asset
 function tleToAsset(payload: TLEPayload): Asset {
+
+  // convert the TLE payload to a satellite object using the SGP4 algorithm
   const satrec = twoline2satrec(payload.line1, payload.line2);
 
   if (satrec.error !== 0) {
@@ -75,23 +77,28 @@ function tleToAsset(payload: TLEPayload): Asset {
   const position = posVel.position;
   const vel = posVel.velocity;
 
+  // check if the position and velocity are valid
   if (isNaN(position.x) || isNaN(vel.x)) {
     throw new Error(`SGP4 propagation returned no position/velocity for ${payload.name}`);
   }
 
+  // convert the position and velocity to geodetic coordinates
   const gmst = gstime(now);
   const geodetic = eciToGeodetic(position, gmst);
 
+  // convert the latitude and longitude to degrees
   const lat = degreesLat(geodetic.latitude);
   const lon = degreesLong(geodetic.longitude);
   const altKm = geodetic.height;
   const speedKms = Math.sqrt(vel.x ** 2 + vel.y ** 2 + vel.z ** 2);
 
+  // convert the inclination to degrees
   const inclDeg = (satrec.inclo * 180) / Math.PI;
-  // NORAD catalog number occupies columns 3-7 of TLE line 1 (1-indexed)
+
+  // get the NORAD catalog number from the TLE line 1
   const catalogId = payload.line1.substring(2, 7).trim();
 
-  // Space-Track names debris with "DEB" and rocket bodies with "R/B"
+  // determine the object type based on the name
   const upperName = payload.name.toUpperCase();
   const objectType: Asset['type'] = upperName.includes('DEB')
     ? 'DEBRIS'
