@@ -5,7 +5,7 @@ interface EventRow {
   id: string;
   type: string;
   asset_id: string;
-  occurred_at: string;
+  time: string;
   details: Record<string, unknown>;
 }
 
@@ -18,7 +18,7 @@ export async function getAllEvents(q: EventQuery = {}): Promise<SatelliteEvent[]
   const params: unknown[] = [];
 
     // WHERE 1=1 lets every optional filter append AND since SQL only allows one WHERE clause
-  let sql = `SELECT id, type, asset_id, occurred_at, details FROM events WHERE 1=1`;
+  let sql = `SELECT id, type, asset_id, occurred_at AS time, details FROM events WHERE 1=1`;
 
   // push the assetId filter to the SQL query if provided
   if (q.assetId) {
@@ -40,7 +40,7 @@ export async function getAllEvents(q: EventQuery = {}): Promise<SatelliteEvent[]
     id: row.id,
     type: row.type as SatelliteEvent['type'],
     assetId: row.asset_id,
-    time: row.occurred_at,
+    time: row.time,
     details: row.details,
   }));
 }
