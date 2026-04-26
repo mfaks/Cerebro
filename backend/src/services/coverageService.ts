@@ -8,10 +8,9 @@ interface CoverageRow {
   created_at: string;
 }
 
-// function to get all coverage zones
 export async function getAllCoverageZones(): Promise<CoverageZone[]> {
   const result = await query<CoverageRow>(
-    `SELECT id, asset_id, ST_AsGeoJSON(polygon) AS polygon, created_at
+    `SELECT id, asset_id, ST_AsGeoJSON(boundary) AS polygon, created_at
      FROM coverage_zones
      ORDER BY created_at DESC`,
   );

@@ -1,3 +1,6 @@
+# Prometheus scrape config that tells Prometheus what to collect and how often.
+# The cerebro-backend job scrapes the backend's /metrics endpoint every 15 seconds.
+
 global:
   scrape_interval: 15s
 

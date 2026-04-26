@@ -51,17 +51,16 @@ function rowToAsset(row: AssetRow): Asset {
 const BASE_SELECT = `
   SELECT
     id, name, type, status,
-    ST_Y(geom) AS latitude,
-    ST_X(geom) AS longitude,
+    ST_Y(location) AS latitude,
+    ST_X(location) AS longitude,
     altitude, speed, inclination,
     country, launch_date, rcs_size, last_updated
   FROM assets
 `;
 
-// function to get all assets
 export async function getAllAssets(q: AssetQuery): Promise<Asset[]> {
   const params: unknown[] = [];
-  // WHERE 1=1 lets every optional filter append AND without special-casing the first clause
+  // WHERE 1=1 lets every optional filter append to use one AND clause per SQL query
   let sql = BASE_SELECT + ' WHERE 1=1';
 
   if (q.type) {
@@ -81,7 +80,6 @@ export async function getAllAssets(q: AssetQuery): Promise<Asset[]> {
   return result.rows.map(rowToAsset);
 }
 
-// function to get an asset by ID
 export async function getAssetById(id: string): Promise<Asset | null> {
   const result = await query<AssetRow>(
     BASE_SELECT + ' WHERE id = $1',
@@ -102,7 +100,7 @@ export async function getAssetTrack(
 
   const params: unknown[] = [id];
   let sql = `
-    SELECT ST_Y(geom) AS latitude, ST_X(geom) AS longitude, altitude, recorded_at AS time
+    SELECT ST_Y(location) AS latitude, ST_X(location) AS longitude, altitude, recorded_at AS time
     FROM positions
     WHERE asset_id = $1
   `;
@@ -136,7 +134,7 @@ async function insertPosition(
 ): Promise<void> {
   // ST_MakePoint takes (longitude, latitude) — x/y order, opposite to our param order
   await query(
-    `INSERT INTO positions (asset_id, geom, altitude)
+    `INSERT INTO positions (asset_id, location, altitude)
      VALUES ($1, ST_SetSRID(ST_MakePoint($3, $2), 4326), $4)`,
     [assetId, latitude, longitude, altitude],
   );
@@ -147,19 +145,19 @@ export async function upsertAsset(asset: Asset): Promise<void> {
   // ST_MakePoint takes (longitude, latitude) — x/y order, opposite to our param order
   await query(
     `INSERT INTO assets
-       (id, name, type, status, geom, altitude, speed, inclination, country, launch_date, rcs_size, last_updated)
+       (id, name, type, status, location, altitude, speed, inclination, country, launch_date, rcs_size, last_updated)
      VALUES
        ($1, $2, $3, $4, ST_SetSRID(ST_MakePoint($6, $5), 4326), $7, $8, $9, $10, $11, $12, $13)
      ON CONFLICT (id) DO UPDATE SET
-       name         = EXCLUDED.name,
-       type         = EXCLUDED.type,
-       status       = EXCLUDED.status,
-       geom         = EXCLUDED.geom,
-       altitude     = EXCLUDED.altitude,
-       speed        = EXCLUDED.speed,
-       inclination  = EXCLUDED.inclination,
+       name       = EXCLUDED.name,
+       type       = EXCLUDED.type,
+       status     = EXCLUDED.status,
+       location   = EXCLUDED.location,
+       altitude   = EXCLUDED.altitude,
+       speed      = EXCLUDED.speed,
+       inclination = EXCLUDED.inclination,
        last_updated = EXCLUDED.last_updated
-     -- country, launch_date, rcs_size not in TLE data; preserved from initial insert`,
+     -- country, launch_date, rcs_size are not in TLE data; keep whatever was set on first insert`,
     [
       asset.id, asset.name, asset.type, asset.status,
       asset.position.latitude, asset.position.longitude, asset.position.altitude,
