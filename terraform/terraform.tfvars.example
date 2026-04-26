@@ -1,0 +1,19 @@
+aws_region   = "your-aws-region"
+project_name = "cerebro"
+
+image_tag = "latest"
+
+postgres_user     = "cerebro"
+postgres_password = "changeme"
+postgres_db       = "cerebro"
+
+rabbitmq_user     = "cerebro"
+rabbitmq_password = "changeme"
+
+spacetrack_user     = "you@example.com"
+spacetrack_password = "changeme"
+
+arcgis_api_key = "YOUR_ARCGIS_API_KEY"
+
+grafana_admin_password = "changeme"
+ingest_interval_ms     = "3600000"

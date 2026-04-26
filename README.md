@@ -204,18 +204,12 @@ One `terraform apply` does everything: builds and pushes the backend image to EC
 
 ```bash
 cd terraform
+cp terraform.tfvars.example terraform.tfvars   # fill in your credentials
 terraform init
-
-terraform apply \
-  -var="ssh_key_name=<your-key-pair-name>" \
-  -var="postgres_password=$POSTGRES_PASSWORD" \
-  -var="rabbitmq_password=$RABBITMQ_PASSWORD" \
-  -var="spacetrack_user=$SPACETRACK_USER" \
-  -var="spacetrack_password=$SPACETRACK_PASSWORD" \
-  -var="arcgis_api_key=$VITE_ARCGIS_API_KEY" \
-  -var="grafana_admin_password=$GRAFANA_ADMIN_PASSWORD" \
-  -var="image_tag=$(git rev-parse --short HEAD)"
+terraform apply
 ```
+
+Set `image_tag` in `terraform.tfvars` to a specific git SHA if you want a pinned build, or leave it as `"latest"`. `terraform.tfvars` is gitignored and never committed.
 
 ### Access
 
@@ -228,32 +222,18 @@ terraform apply \
 
 ### Deploying an update
 
-Pass a new `image_tag` and re-apply. Terraform rebuilds the image, pushes it, restarts the stack, and redeploys the frontend.
+Update `image_tag` in `terraform.tfvars` to the new SHA and re-apply. Terraform rebuilds the image, pushes it, restarts the stack, and redeploys the frontend.
 
 ```bash
-terraform apply \
-  -var="ssh_key_name=<your-key-pair-name>" \
-  -var="postgres_password=$POSTGRES_PASSWORD" \
-  -var="rabbitmq_password=$RABBITMQ_PASSWORD" \
-  -var="spacetrack_user=$SPACETRACK_USER" \
-  -var="spacetrack_password=$SPACETRACK_PASSWORD" \
-  -var="arcgis_api_key=$VITE_ARCGIS_API_KEY" \
-  -var="grafana_admin_password=$GRAFANA_ADMIN_PASSWORD" \
-  -var="image_tag=$(git rev-parse --short HEAD)"
+# in terraform.tfvars: image_tag = "$(git rev-parse --short HEAD)"
+terraform apply
 ```
 
 ### Tearing down
 
 ```bash
 aws s3 rm s3://<s3_bucket> --recursive
-cd terraform && terraform destroy \
-  -var="ssh_key_name=x" \
-  -var="postgres_password=x" \
-  -var="rabbitmq_password=x" \
-  -var="spacetrack_user=x" \
-  -var="spacetrack_password=x" \
-  -var="arcgis_api_key=x" \
-  -var="grafana_admin_password=x"
+cd terraform && terraform destroy
 ```
 
 ---
