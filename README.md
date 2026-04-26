@@ -86,7 +86,7 @@ Browser
                        Producer    Consumer   Grafana
                           │            │
                     Space-Track    SGP4 propagation
-                    TLE fetch      → upsert assets
+                    TLE fetch      -> upsert assets
 ```
 
 | Service    | Port  | What it does                                            |
@@ -108,19 +108,19 @@ The producer and consumer both live inside the backend process. TLE fetching is 
 Space-Track.org
       │  (every INGEST_INTERVAL_MS, default 1 h)
       ▼
-  Producer  →  Exchange: cerebro (topic, durable)
+  Producer  ->  Exchange: cerebro (topic, durable)
                     │  routing key: tle.ingest
                     ▼
             Queue: tle.ingest (durable)
                     │
               Consumer
-              1. parse JSON → TLEPayload
+              1. parse JSON -> TLEPayload
               2. SGP4 init  (twoline2satrec)
-              3. propagate  → ECI position/velocity
-              4. eciToGeodetic → lat / lon / alt / speed
-              5. upsertAsset  → PostgreSQL
+              3. propagate  -> ECI position/velocity
+              4. eciToGeodetic -> lat / lon / alt / speed
+              5. upsertAsset  -> PostgreSQL
               6. ack
-                    │  on any error → nack (requeue=false)
+                    │  on any error -> nack (requeue=false)
                     ▼
             Queue: tle.ingest.dlq
               DLQ consumer logs and acks the message
