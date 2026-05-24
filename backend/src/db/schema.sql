@@ -15,11 +15,11 @@ CREATE TABLE IF NOT EXISTS assets (
   country       TEXT,
   launch_date   DATE,
   rcs_size      TEXT CHECK (rcs_size IN ('SMALL', 'MEDIUM', 'LARGE')),
-  updated_at    TIMESTAMPTZ NOT NULL DEFAULT now()
+  last_updated  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 -- Speeds up the startTime / endTime range filters the asset list API supports.
-CREATE INDEX IF NOT EXISTS assets_updated_at_idx ON assets (updated_at);
+CREATE INDEX IF NOT EXISTS assets_last_updated_idx ON assets (last_updated);
 
 -- Ground footprint polygons showing what area each satellite can observe or reach.
 -- Rows cascade-delete when the parent asset is removed.
@@ -41,9 +41,8 @@ CREATE TABLE IF NOT EXISTS events (
   details     JSONB NOT NULL DEFAULT '{}'
 );
 
--- Event queries always filter by asset and sort newest-first; one index per column is enough.
-CREATE INDEX IF NOT EXISTS events_asset_idx       ON events (asset_id);
-CREATE INDEX IF NOT EXISTS events_occurred_at_idx ON events (occurred_at DESC);
+-- Event queries always filter by asset AND sort newest-first; a composite index covers both in one scan.
+CREATE INDEX IF NOT EXISTS events_asset_time_idx ON events (asset_id, occurred_at DESC);
 
 -- One row per position refresh — builds the historical track the frontend replays.
 -- Rows cascade-delete when the parent asset is removed.
